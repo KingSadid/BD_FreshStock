@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Test index</title>
+</head>
+
+<body>
+  <div>
+    <h1>SQL Operations</h1>
+
+    <section>
+      <h2>Post Operation</h2>
+        <label for="name">Name:</label><br>
+        <input type="text" id="name" name="name" required><br><br>
+        <label for="birthdate">Birthdate:</label><br>
+        <input type="date" id="birthdate" name="birthdate" required><br><br>
+
+        <button id="postBtn">Send</button>
+      <p id="postSqlResult"></p>
+    </section>
+
+    <section>
+      <h2>Get All Entries</h2>
+      <button id="getAllBtn">Get All</button>
+      <ul id="getAllResult"></ul>
+    </section>
+
+    <section>
+      <h2>Get Entry by ID</h2>
+        <label for="id">id:</label><br>
+        <input type="text" id="id" name="id" required><br><br>
+        <button id="getOneBtn">Send</button>
+      <ul id="getOneResult"></ul>
+    </section>
+  </div>
+
+  <script src="./js/sql.js"></script>
+</body>
+
+</html>
