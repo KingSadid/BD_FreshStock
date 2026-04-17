@@ -1,6 +1,5 @@
 -- ======================================================
 -- FRESHSTOCK DATABASE SCHEMA
--- MySQL 8.0+
 -- Author: FreshStock Team
 -- Description: Inventory management for perishable products
 --              with FIFO (PEPS) and expiry alerts
