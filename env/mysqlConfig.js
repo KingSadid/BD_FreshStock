@@ -1,8 +1,14 @@
 const config = {
     host: 'localhost',
     user: 'root',
-    password: '',
-    database: 'freshstock'
+    password: 'root*',
+    database: 'freshstock',
+    port: 3306,
+    waitForConnections: true,
+    connectionLimit: 10,
+    queueLimit: 0,
+    enableKeepAlive: true,
+    keepAliveInitialDelay: 0
 };
 
 module.exports = config;
