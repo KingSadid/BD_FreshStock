@@ -6,9 +6,7 @@ const config = {
     port: 3306,
     waitForConnections: true,
     connectionLimit: 10,
-    queueLimit: 0,
-    enableKeepAlive: true,
-    keepAliveInitialDelay: 0
+    queueLimit: 0
 };
 
 module.exports = config;

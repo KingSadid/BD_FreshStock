@@ -5,7 +5,7 @@ const getAll = async (req, res) => {
     const [rows] = await db.query(`
       SELECT c.*, COUNT(p.sku) as product_count
       FROM category c
-      LEFT JOIN product p ON c.category_id = p.category_id
+      LEFT JOIN product p ON c.category_id = p.category_id AND p.is_active = true
       WHERE c.is_active = true
       GROUP BY c.category_id
     `);

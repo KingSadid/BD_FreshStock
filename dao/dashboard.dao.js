@@ -2,17 +2,14 @@ const db = require('../services/mysql.service');
 
 const getKPIs = async (req, res) => {
   try {
-    // Active products
     const [products] = await db.query(
       "SELECT COUNT(*) as count FROM product WHERE is_active = true"
     );
     
-    // Registered lots
     const [batches] = await db.query(
       "SELECT COUNT(*) as count FROM batch"
     );
     
-    // Expiration date (7 days)
     const [expiring] = await db.query(`
       SELECT COUNT(*) as count 
       FROM batch 
@@ -21,7 +18,6 @@ const getKPIs = async (req, res) => {
         AND current_quantity > 0
     `);
     
-    // Critical stock (below minimum)
     const [critical] = await db.query(`
       SELECT COUNT(*) as count
       FROM (
