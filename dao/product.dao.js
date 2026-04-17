@@ -32,7 +32,7 @@ const getBySku = async (req, res) => {
       LEFT JOIN unit_of_measure u ON p.unit_id = u.unit_id
       WHERE p.sku = ?
     `, [req.params.sku]);
-
+    
     if (!rows[0]) return res.status(404).json({ error: 'Producto no encontrado' });
     res.json(rows[0]);
   } catch (err) {
@@ -42,11 +42,11 @@ const getBySku = async (req, res) => {
 
 const create = async (req, res) => {
   try {
-    const {
-      sku, barcode, name, description,
-      category_id, unit_id = 5, min_stock = 0,
-      sale_price, requires_refrigeration = false,
-      expiry_alert_days = 7
+    const { 
+      sku, barcode, name, description, 
+      category_id, unit_id = 5, min_stock = 0, 
+      sale_price, requires_refrigeration = false, 
+      expiry_alert_days = 7 
     } = req.body;
 
     if (!sku || !name || !sale_price) {
@@ -58,12 +58,12 @@ const create = async (req, res) => {
        (sku, barcode, name, description, category_id, unit_id, 
         min_stock, sale_price, requires_refrigeration, expiry_alert_days) 
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [sku, barcode, name, description, category_id, unit_id,
-        min_stock, sale_price, requires_refrigeration, expiry_alert_days]
+      [sku, barcode, name, description, category_id, unit_id, 
+       min_stock, sale_price, requires_refrigeration, expiry_alert_days]
     );
-
-    res.status(201).json({
-      sku, name, message: 'Producto creado exitosamente'
+    
+    res.status(201).json({ 
+      sku, name, message: 'Producto creado exitosamente' 
     });
   } catch (err) {
     if (err.code === 'ER_DUP_ENTRY') {
@@ -87,11 +87,70 @@ const getStockSummary = async (req, res) => {
       WHERE p.sku = ?
       GROUP BY p.sku
     `, [req.params.sku]);
-
+    
     res.json(rows[0] || { total_stock: 0, active_lots: 0 });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 };
 
-module.exports = { getAll, getBySku, create, getStockSummary };
+const update = async (req, res) => {
+  try {
+    const { sku } = req.params;
+    const { 
+      name, description, category_id, unit_id, 
+      min_stock, sale_price, requires_refrigeration, 
+      expiry_alert_days, is_active 
+    } = req.body;
+
+    if (!name || !sale_price) {
+      return res.status(400).json({ error: 'Nombre y precio son requeridos' });
+    }
+
+    const [result] = await db.query(
+      `UPDATE product SET 
+        name = ?, description = ?, category_id = ?, unit_id = ?, 
+        min_stock = ?, sale_price = ?, requires_refrigeration = ?, 
+        expiry_alert_days = ?, is_active = ?
+       WHERE sku = ?`,
+      [name, description, category_id, unit_id, 
+       min_stock, sale_price, requires_refrigeration, 
+       expiry_alert_days, is_active !== undefined ? is_active : true, sku]
+    );
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: 'Producto no encontrado' });
+    }
+
+    res.json({ message: 'Producto actualizado exitosamente' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+const deleteProduct = async (req, res) => {
+  try {
+    const { sku } = req.params;
+    
+    // Primero verificamos si tiene lotes asociados
+    const [batches] = await db.query('SELECT COUNT(*) as count FROM batch WHERE product_sku = ?', [sku]);
+    
+    if (batches[0].count > 0) {
+      // Si tiene lotes, hacemos borrado lógico para no romper integridad
+      await db.query('UPDATE product SET is_active = false WHERE sku = ?', [sku]);
+      return res.json({ message: 'Producto desactivado (borrado lógico) por tener lotes asociados' });
+    }
+
+    const [result] = await db.query('DELETE FROM product WHERE sku = ?', [sku]);
+    
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: 'Producto no encontrado' });
+    }
+
+    res.json({ message: 'Producto eliminado exitosamente' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+module.exports = { getAll, getBySku, create, getStockSummary, update, deleteProduct };
