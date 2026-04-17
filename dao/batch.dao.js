@@ -44,7 +44,7 @@ const create = async (req, res) => {
   const connection = await db.getConnection();
   try {
     await connection.beginTransaction();
-    
+
     const {
       product_sku, supplier_id, branch_id = 1,
       entry_date, production_date, expiry_date,
@@ -57,7 +57,7 @@ const create = async (req, res) => {
     }
 
     const batch_code = `L-${new Date().getFullYear()}-${Date.now().toString().slice(-4)}`;
-    
+
     const [result] = await connection.query(
       `INSERT INTO batch 
        (batch_code, product_sku, supplier_id, branch_id, entry_date, 
@@ -65,8 +65,8 @@ const create = async (req, res) => {
         unit_cost, warehouse_location, notes) 
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [batch_code, product_sku, supplier_id, branch_id, entry_date || new Date(),
-       production_date, expiry_date, initial_quantity, initial_quantity,
-       unit_cost, warehouse_location, notes]
+        production_date, expiry_date, initial_quantity, initial_quantity,
+        unit_cost, warehouse_location, notes]
     );
 
     await connection.query(
@@ -78,7 +78,7 @@ const create = async (req, res) => {
     );
 
     await connection.commit();
-    
+
     res.status(201).json({
       batch_id: result.insertId,
       batch_code,
@@ -96,17 +96,17 @@ const updateQuantity = async (req, res) => {
   try {
     const { batch_id } = req.params;
     const { quantity, user_id = 1, reason } = req.body;
-    
+
     const [batch] = await db.query(
       'SELECT current_quantity FROM batch WHERE batch_id = ?',
       [batch_id]
     );
-    
+
     if (!batch[0]) return res.status(404).json({ error: 'Lote no encontrado' });
-    
+
     const previous = batch[0].current_quantity;
     const posterior = previous - quantity;
-    
+
     if (posterior < 0) {
       return res.status(400).json({ error: 'Cantidad insuficiente en lote' });
     }
@@ -151,10 +151,36 @@ const getExpiringBatches = async (req, res) => {
   }
 };
 
-module.exports = { 
-  getAll, 
-  getByProduct, 
-  create, 
+const remove = async (req, res) => {
+  const connection = await db.getConnection();
+  try {
+    await connection.beginTransaction();
+
+    const { batch_id } = req.params;
+
+    await connection.query('DELETE FROM movement WHERE batch_id = ?', [batch_id]);
+
+    const [result] = await connection.query('DELETE FROM batch WHERE batch_id = ?', [batch_id]);
+
+    if (result.affectedRows === 0) {
+      throw new Error('Lote no encontrado');
+    }
+
+    await connection.commit();
+    res.json({ message: 'Lote eliminado permanentemente' });
+  } catch (err) {
+    await connection.rollback();
+    res.status(500).json({ error: err.message });
+  } finally {
+    connection.release();
+  }
+};
+
+module.exports = {
+  getAll,
+  getByProduct,
+  create,
   updateQuantity,
-  getExpiringBatches 
+  getExpiringBatches,
+  remove
 };

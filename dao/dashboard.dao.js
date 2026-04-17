@@ -41,4 +41,38 @@ const getKPIs = async (req, res) => {
   }
 };
 
-module.exports = { getKPIs };
+const getMovementStats = async (req, res) => {
+  try {
+    const stats = await db.query(`
+      SELECT 
+        DATE(datetime) as date,
+        SUM(CASE WHEN mt.sign = '+' THEN quantity ELSE 0 END) as entries,
+        SUM(CASE WHEN mt.sign = '-' THEN quantity ELSE 0 END) as exits
+      FROM movement m
+      JOIN movement_type mt ON m.movement_type_id = mt.movement_type_id
+      WHERE datetime >= DATE_SUB(CURDATE(), INTERVAL 6 DAY)
+      GROUP BY DATE(datetime)
+      ORDER BY DATE(datetime) ASC
+    `);
+    res.json(stats[0]);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+const getCategoryStats = async (req, res) => {
+  try {
+    const stats = await db.query(`
+      SELECT c.name, COUNT(p.sku) as product_count
+      FROM category c
+      LEFT JOIN product p ON c.category_id = p.category_id
+      WHERE c.is_active = true
+      GROUP BY c.category_id, c.name
+    `);
+    res.json(stats[0]);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+module.exports = { getKPIs, getMovementStats, getCategoryStats };

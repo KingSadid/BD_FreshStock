@@ -7,5 +7,6 @@ router.get('/expiring', batchDao.getExpiringBatches);
 router.get('/product/:sku', batchDao.getByProduct);
 router.post('/', batchDao.create);
 router.patch('/:batch_id/quantity', batchDao.updateQuantity);
+router.delete('/:batch_id', batchDao.remove);
 
 module.exports = router;

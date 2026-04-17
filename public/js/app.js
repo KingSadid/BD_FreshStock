@@ -54,6 +54,15 @@ async function loadDashboard() {
       `;
     }).join('');
 
+    // Cargar estadísticas para gráficos
+    const [movementStats, categoryStats] = await Promise.all([
+      api.getMovementStats(),
+      api.getCategoryStats()
+    ]);
+
+    renderMovementChart(movementStats);
+    renderCategoryChart(categoryStats);
+
     // Animar números
     animateValue('kpi-products', 0, kpis.active_products, 1000);
     animateValue('kpi-batches', 0, kpis.total_batches, 1000);
@@ -63,6 +72,145 @@ async function loadDashboard() {
     showToast('Error', 'No se pudieron cargar los datos', 'error');
   }
 }
+
+function renderMovementChart(data) {
+  const svg = document.querySelector('.line-chart-svg');
+  if (!svg) return;
+
+  const days = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+  const today = new Date();
+  const last7Days = [];
+  for (let i = 6; i >= 0; i--) {
+      const date = new Date();
+      date.setDate(today.getDate() - i);
+      last7Days.push({
+          dateStr: date.toISOString().split('T')[0],
+          dayName: days[date.getDay()]
+      });
+  }
+
+  // Mapear datos a los últimos 7 días
+  const plotData = last7Days.map(d => {
+      const dayData = data.find(item => item.date.startsWith(d.dateStr)) || { entries: 0, exits: 0 };
+      return { day: d.dayName, entries: dayData.entries, exits: dayData.exits };
+  });
+
+  const maxVal = Math.max(...plotData.map(d => Math.max(d.entries, d.exits)), 10);
+  const width = 600;
+  const height = 200;
+  const padding = 40;
+  const chartWidth = width - padding * 2;
+  const chartHeight = height - padding * 2;
+
+  const getX = (i) => padding + (i * chartWidth) / 6;
+  const getY = (val) => (height - padding) - (val * chartHeight) / maxVal;
+
+  let entryPath = `M ${getX(0)},${getY(plotData[0].entries)}`;
+  let exitPath = `M ${getX(0)},${getY(plotData[0].exits)}`;
+  let entryArea = `M ${getX(0)},${height - padding} L ${getX(0)},${getY(plotData[0].entries)}`;
+  let exitArea = `M ${getX(0)},${height - padding} L ${getX(0)},${getY(plotData[0].exits)}`;
+
+  let entryPoints = '';
+  let exitPoints = '';
+  let labels = '';
+
+  plotData.forEach((d, i) => {
+      const x = getX(i);
+      const yEnt = getY(d.entries);
+      const yExt = getY(d.exits);
+
+      if (i > 0) {
+          entryPath += ` L ${x},${yEnt}`;
+          exitPath += ` L ${x},${yExt}`;
+      }
+      entryArea += ` L ${x},${yEnt}`;
+      exitArea += ` L ${x},${yExt}`;
+      
+      entryPoints += `<circle cx="${x}" cy="${yEnt}" r="4" fill="#10b981" />`;
+      exitPoints += `<circle cx="${x}" cy="${yExt}" r="4" fill="#6366f1" />`;
+      labels += `<text x="${x}" y="${height - 10}" text-anchor="middle" fill="var(--text-muted)" font-size="11">${d.day}</text>`;
+  });
+
+  entryArea += ` L ${getX(6)},${height - padding} Z`;
+  exitArea += ` L ${getX(6)},${height - padding} Z`;
+
+  svg.innerHTML = `
+    <defs>
+      <linearGradient id="grad1" x1="0%" y1="0%" x2="0%" y2="100%">
+        <stop offset="0%" style="stop-color:#10b981;stop-opacity:0.2" />
+        <stop offset="100%" style="stop-color:#10b981;stop-opacity:0" />
+      </linearGradient>
+      <linearGradient id="grad2" x1="0%" y1="0%" x2="0%" y2="100%">
+        <stop offset="0%" style="stop-color:#6366f1;stop-opacity:0.2" />
+        <stop offset="100%" style="stop-color:#6366f1;stop-opacity:0" />
+      </linearGradient>
+    </defs>
+    <path d="${entryArea}" fill="url(#grad1)" />
+    <path d="${entryPath}" fill="none" stroke="#10b981" stroke-width="3" stroke-linecap="round" />
+    <path d="${exitArea}" fill="url(#grad2)" />
+    <path d="${exitPath}" fill="none" stroke="#6366f1" stroke-width="3" stroke-linecap="round" />
+    ${entryPoints}
+    ${exitPoints}
+    ${labels}
+  `;
+}
+
+function renderCategoryChart(data) {
+  const total = data.reduce((acc, curr) => acc + curr.product_count, 0);
+  document.getElementById('donut-total').textContent = total;
+
+  const colors = ['#10b981', '#6366f1', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
+  const legend = document.getElementById('categories-legend');
+  const svg = document.querySelector('.donut-svg');
+  if (!svg || !legend) return;
+
+  legend.innerHTML = data.map((cat, i) => `
+    <div class="legend-item">
+      <span class="legend-dot" style="background:${colors[i % colors.length]}"></span>
+      <span class="legend-label">${cat.name}</span>
+      <span class="legend-val">${cat.product_count}</span>
+    </div>
+  `).join('');
+
+  // Update SVG segments
+  const radius = 80;
+  const circumference = 2 * Math.PI * radius;
+  let offset = 0;
+
+  // Clear existing segments (except background circle and texts)
+  const segments = svg.querySelectorAll('.donut-seg');
+  segments.forEach(s => s.remove());
+
+  data.forEach((cat, i) => {
+      if (cat.product_count === 0) return;
+      const percent = cat.product_count / total;
+      const strokeDash = percent * circumference;
+      
+      const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+      circle.setAttribute("cx", "100");
+      circle.setAttribute("cy", "100");
+      circle.setAttribute("r", "80");
+      circle.setAttribute("fill", "none");
+      circle.setAttribute("stroke", colors[i % colors.length]);
+      circle.setAttribute("stroke-width", "24");
+      circle.setAttribute("stroke-dasharray", `${strokeDash} ${circumference}`);
+      circle.setAttribute("stroke-dashoffset", -offset);
+      circle.setAttribute("class", "donut-seg");
+      
+      svg.appendChild(circle);
+      offset += strokeDash;
+  });
+  
+  // Re-append text to keep it on top
+  const texts = svg.querySelectorAll('text');
+  texts.forEach(t => svg.appendChild(t));
+
+  // Trigger GSAP animation if available
+  if (window.GSAPIntegration) {
+      window.GSAPIntegration.animateDashboardExt(document.getElementById('screen-dashboard'));
+  }
+}
+
 
 // Cargar productos
 async function loadProducts() {
@@ -151,8 +299,9 @@ async function viewProductDetail(sku) {
           <td>${b.current_quantity}/${b.initial_quantity}</td>
           <td>${getStatusBadge(days)}</td>
           <td>
-            <button class="icon-btn-sm"><i class="fas fa-eye"></i></button>
-            <button class="icon-btn-sm" onclick="registerOutput(${b.batch_id})"><i class="fas fa-minus-circle"></i></button>
+            <button class="icon-btn-sm" title="Ver lote"><i class="fas fa-eye"></i></button>
+            <button class="icon-btn-sm" title="Registrar salida" onclick="registerOutput(${b.batch_id})"><i class="fas fa-minus-circle"></i></button>
+            <button class="icon-btn-sm btn-danger-text" title="Eliminar lote" onclick="deleteBatchConfirm(${b.batch_id})"><i class="fas fa-trash"></i></button>
           </td>
         </tr>
       `;
@@ -197,8 +346,9 @@ async function loadLots() {
           <td>${getStatusBadge(days)}</td>
           <td><span class="peps-priority ${priority}">${priorityIcon} ${index + 1}°</span></td>
           <td>
-            <button class="icon-btn-sm"><i class="fas fa-eye"></i></button>
-            <button class="icon-btn-sm" onclick="registerOutput(${b.batch_id})"><i class="fas fa-minus-circle"></i></button>
+            <button class="icon-btn-sm" title="Ver lote"><i class="fas fa-eye"></i></button>
+            <button class="icon-btn-sm" title="Registrar salida" onclick="registerOutput(${b.batch_id})"><i class="fas fa-minus-circle"></i></button>
+            <button class="icon-btn-sm btn-danger-text" title="Eliminar lote" onclick="deleteBatchConfirm(${b.batch_id})"><i class="fas fa-trash"></i></button>
           </td>
         </tr>
       `;
@@ -464,5 +614,27 @@ function registerOutput(batchId) {
   if (quantity && !isNaN(quantity)) {
     showToast('Éxito', `Se registraron ${quantity} unidades de salida`, 'success');
     loadLots(); // Recargar
+  }
+}
+
+// Eliminar lote
+async function deleteBatchConfirm(id) {
+  if (confirm('¿Estás seguro de eliminar este lote permanentemente? Esta acción eliminará también el historial de movimientos asociado.')) {
+    try {
+      const res = await api.deleteBatch(id);
+      if (res.ok) {
+        showToast('Éxito', 'Lote eliminado', 'success');
+        if (AppState.currentScreen === 'screen-lots') loadLots();
+        if (AppState.currentScreen === 'screen-product-detail') {
+          const sku = document.getElementById('detail-sku').textContent.replace('SKU: ', '');
+          viewProductDetail(sku);
+        }
+      } else {
+        const err = await res.json();
+        showToast('Error', err.error || 'No se pudo eliminar el lote', 'error');
+      }
+    } catch (error) {
+      showToast('Error', 'Error de conexión', 'error');
+    }
   }
 }

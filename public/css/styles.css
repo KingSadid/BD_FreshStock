@@ -791,6 +791,53 @@ body {
   border: 2px solid #fff;
 }
 
+.donut-chart {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+  padding: 1rem 0;
+}
+
+.donut-svg {
+  width: 200px;
+  height: 200px;
+}
+
+.donut-legend {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  width: 100%;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.8rem;
+}
+
+.legend-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.legend-label {
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
+}
+
+.legend-val {
+  font-weight: 700;
+  color: var(--text);
+}
+
 .icon-btn-sm {
   width: 32px;
   height: 32px;
@@ -1541,6 +1588,14 @@ body {
 
 .text-danger {
   color: var(--danger) !important;
+}
+
+.btn-danger-text {
+  color: var(--danger) !important;
+}
+
+.btn-danger-text:hover {
+  background: var(--danger-light) !important;
 }
 
 .mini-stock {
