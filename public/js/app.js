@@ -7,7 +7,7 @@ async function loadDashboard() {
     document.getElementById('kpi-batches').textContent = kpis.total_batches;
     document.getElementById('kpi-expiring').textContent = kpis.expiring_soon;
     document.getElementById('kpi-critical').textContent = kpis.critical_stock;
-    
+
     // Actualizar badges
     document.querySelectorAll('[id^="nav-badge-products"]').forEach(b => b.textContent = kpis.active_products);
     document.querySelectorAll('[id^="nav-badge-alerts"]').forEach(b => b.textContent = kpis.expiring_soon);
@@ -15,7 +15,7 @@ async function loadDashboard() {
     document.getElementById('banner-expiring').textContent = kpis.expiring_soon + ' productos';
     document.getElementById('login-stat-products').textContent = kpis.active_products + ' productos';
     document.getElementById('login-stat-alerts').textContent = kpis.expiring_soon + ' alertas';
-    
+
     // Próximos a vencer
     const expiring = await api.getExpiringBatches(7);
     const expiryList = document.getElementById('dashboard-expiry-list');
@@ -23,7 +23,7 @@ async function loadDashboard() {
       const days = getDaysRemaining(batch.expiry_date);
       const statusClass = days <= 0 ? 'critical' : days <= 2 ? 'warning' : 'caution';
       const daysText = days <= 0 ? 'Hoy' : days + ' días';
-      
+
       return `
         <div class="expiry-item ${statusClass}">
           <div class="expiry-icon"><i class="fas fa-box"></i></div>
@@ -37,7 +37,7 @@ async function loadDashboard() {
         </div>
       `;
     }).join('');
-    
+
     // Actividad reciente
     const movements = await api.getRecentMovements();
     const activityList = document.getElementById('dashboard-activity-list');
@@ -53,11 +53,11 @@ async function loadDashboard() {
         </div>
       `;
     }).join('');
-    
+
     // Animar números
     animateValue('kpi-products', 0, kpis.active_products, 1000);
     animateValue('kpi-batches', 0, kpis.total_batches, 1000);
-    
+
   } catch (error) {
     console.error('Error cargando dashboard:', error);
     showToast('Error', 'No se pudieron cargar los datos', 'error');
@@ -71,17 +71,17 @@ async function loadProducts() {
       api.getProducts(),
       api.getCategories()
     ]);
-    
+
     AppState.products = products;
     AppState.categories = categories;
-    
+
     // Renderizar grid
     const grid = document.getElementById('products-grid');
     grid.innerHTML = products.map(p => {
       const stockPercent = Math.min(100, (Math.random() * 60 + 40)); // Simulado hasta tener stock real
       const status = stockPercent < 20 ? 'danger' : stockPercent < 50 ? 'warning' : 'ok';
       const statusText = stockPercent < 20 ? 'Crítico' : stockPercent < 50 ? 'Stock Bajo' : 'En Stock';
-      
+
       return `
         <div class="product-card" onclick="viewProductDetail('${p.sku}')">
           <div class="pc-image" style="background: linear-gradient(135deg, #dbeafe, #bfdbfe);">
@@ -104,16 +104,16 @@ async function loadProducts() {
         </div>
       `;
     }).join('');
-    
+
     // Filtros de categoría
     const filterContainer = document.getElementById('category-filters');
     filterContainer.innerHTML = `
       <button class="chip active" onclick="filterProducts('all')">Todos <span class="chip-count">${products.length}</span></button>
       ${categories.map(c => `<button class="chip" onclick="filterProducts('${c.category_id}')">${c.name} <span class="chip-count">${c.product_count}</span></button>`).join('')}
     `;
-    
+
     document.getElementById('count-all').textContent = products.length;
-    
+
   } catch (error) {
     console.error('Error cargando productos:', error);
   }
@@ -136,11 +136,11 @@ async function viewProductDetail(sku) {
     document.getElementById('detail-min-stock').textContent = 'Stock Mínimo: ' + product.min_stock + ' ' + (product.unit_abbr || 'un');
     document.getElementById('detail-price').textContent = 'Precio: $' + parseFloat(product.sale_price).toLocaleString();
     document.getElementById('detail-breadcrumb').textContent = 'Productos / ' + product.name;
-    
+
     // Cargar lotes del producto
     const batches = await api.getBatches();
     const productBatches = batches.filter(b => b.sku === sku);
-    
+
     document.getElementById('detail-lots-table').innerHTML = productBatches.map(b => {
       const days = getDaysRemaining(b.expiry_date);
       return `
@@ -157,7 +157,7 @@ async function viewProductDetail(sku) {
         </tr>
       `;
     }).join('') || '<tr><td colspan="6" style="text-align:center">No hay lotes activos</td></tr>';
-    
+
     navigateTo('screen-product-detail');
   } catch (error) {
     showToast('Error', 'No se pudo cargar el producto', 'error');
@@ -169,14 +169,14 @@ async function loadLots() {
   try {
     const batches = await api.getBatches();
     AppState.batches = batches;
-    
+
     const tbody = document.getElementById('lots-table-body');
     tbody.innerHTML = batches.map((b, index) => {
       const days = getDaysRemaining(b.expiry_date);
       const rowClass = days < 0 ? 'row-critical' : days <= 3 ? 'row-warning' : '';
       const priority = index < 3 ? 'p1' : index < 6 ? 'p2' : 'p3';
       const priorityIcon = index < 3 ? '🔴' : index < 6 ? '🟠' : '🟢';
-      
+
       return `
         <tr class="${rowClass}">
           <td><strong>#${b.batch_code}</strong></td>
@@ -185,7 +185,7 @@ async function loadLots() {
           <td>${formatDate(b.expiry_date)}</td>
           <td>
             <div class="mini-stock">
-              <div class="stock-bar"><div class="stock-fill" style="width:${(b.current_quantity/b.initial_quantity)*100}%;background:${days < 0 ? '#ef4444' : days < 3 ? '#f59e0b' : '#10b981'};"></div></div>
+              <div class="stock-bar"><div class="stock-fill" style="width:${(b.current_quantity / b.initial_quantity) * 100}%;background:${days < 0 ? '#ef4444' : days < 3 ? '#f59e0b' : '#10b981'};"></div></div>
               <span>${b.current_quantity}/${b.initial_quantity}</span>
             </div>
           </td>
@@ -199,7 +199,7 @@ async function loadLots() {
         </tr>
       `;
     }).join('');
-    
+
   } catch (error) {
     console.error('Error cargando lotes:', error);
   }
@@ -212,20 +212,20 @@ async function prepareLotForm() {
       api.getProducts(),
       api.getSuppliers()
     ]);
-    
+
     const productSelect = document.getElementById('lot-product-select');
     const supplierSelect = document.getElementById('lot-supplier-select');
-    
-    productSelect.innerHTML = '<option value="">Seleccionar producto...</option>' + 
+
+    productSelect.innerHTML = '<option value="">Seleccionar producto...</option>' +
       products.map(p => `<option value="${p.sku}">${p.name}</option>`).join('');
-    
-    supplierSelect.innerHTML = '<option value="">Seleccionar proveedor...</option>' + 
+
+    supplierSelect.innerHTML = '<option value="">Seleccionar proveedor...</option>' +
       suppliers.map(s => `<option value="${s.supplier_id}">${s.name}</option>`).join('');
-      
+
     // Setear fecha de hoy
     const today = new Date().toISOString().split('T')[0];
     document.querySelector('input[name="entry_date"]').value = today;
-    
+
   } catch (error) {
     console.error('Error preparando formulario:', error);
   }
@@ -239,12 +239,12 @@ document.addEventListener('DOMContentLoaded', () => {
       e.preventDefault();
       const formData = new FormData(lotForm);
       const data = Object.fromEntries(formData);
-      
+
       // Convertir a números donde sea necesario
       data.supplier_id = data.supplier_id || null;
       data.initial_quantity = parseFloat(data.initial_quantity);
       data.unit_cost = parseFloat(data.unit_cost) || 0;
-      
+
       try {
         const res = await api.createBatch(data);
         if (res.ok) {
@@ -260,7 +260,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
   }
-  
+
   // Crear producto
   const productForm = document.getElementById('new-product-form');
   if (productForm) {
@@ -268,12 +268,12 @@ document.addEventListener('DOMContentLoaded', () => {
       e.preventDefault();
       const formData = new FormData(productForm);
       const data = Object.fromEntries(formData);
-      
+
       data.sale_price = parseFloat(data.sale_price);
       data.min_stock = parseFloat(data.min_stock) || 0;
       data.category_id = data.category_id || null;
       data.requires_refrigeration = data.requires_refrigeration ? true : false;
-      
+
       try {
         const res = await api.createProduct(data);
         if (res.ok) {
@@ -296,7 +296,7 @@ document.addEventListener('DOMContentLoaded', () => {
 async function loadAlerts() {
   try {
     const expiring = await api.getExpiringBatches(30);
-    
+
     document.getElementById('alert-expired').textContent = expiring.filter(b => getDaysRemaining(b.expiry_date) < 0).length;
     document.getElementById('alert-today').textContent = expiring.filter(b => getDaysRemaining(b.expiry_date) === 0).length;
     document.getElementById('alert-week').textContent = expiring.filter(b => {
@@ -304,14 +304,14 @@ async function loadAlerts() {
       return d > 0 && d <= 7;
     }).length;
     document.getElementById('alert-stock').textContent = '3'; // Simulado
-    
+
     const container = document.getElementById('alerts-container');
     container.innerHTML = expiring.map(batch => {
       const days = getDaysRemaining(batch.expiry_date);
       let typeClass = 'alert-warning';
       let icon = 'fa-clock';
       let title = 'Próximo a Vencer';
-      
+
       if (days < 0) {
         typeClass = 'alert-critical';
         icon = 'fa-skull-crossbones';
@@ -321,7 +321,7 @@ async function loadAlerts() {
         icon = 'fa-exclamation-circle';
         title = 'Vence HOY';
       }
-      
+
       return `
         <div class="alert-item ${typeClass}">
           <div class="alert-icon-wrap ${days < 0 ? 'critical' : days === 0 ? 'danger' : 'warning'}">
@@ -341,7 +341,7 @@ async function loadAlerts() {
         </div>
       `;
     }).join('');
-    
+
   } catch (error) {
     console.error('Error cargando alertas:', error);
   }
@@ -352,11 +352,11 @@ async function loadSuppliers() {
   try {
     const suppliers = await api.getSuppliers();
     const grid = document.getElementById('suppliers-grid');
-    
+
     grid.innerHTML = suppliers.map(s => `
       <div class="supplier-card">
         <div class="sc-header">
-          <div class="sc-avatar" style="background:#dbeafe;color:#3b82f6;">${s.name.substring(0,2).toUpperCase()}</div>
+          <div class="sc-avatar" style="background:#dbeafe;color:#3b82f6;">${s.name.substring(0, 2).toUpperCase()}</div>
           <div class="sc-info"><h4>${s.name}</h4><span class="sc-type">Proveedor</span></div>
           <span class="status-badge ok">Activo</span>
         </div>
@@ -373,7 +373,7 @@ async function loadSuppliers() {
         </div>
       </div>
     `).join('');
-    
+
   } catch (error) {
     console.error('Error cargando proveedores:', error);
   }
@@ -385,7 +385,7 @@ async function loadCategoriesSelect() {
     const categories = await api.getCategories();
     const select = document.getElementById('new-product-category');
     if (select) {
-      select.innerHTML = '<option value="">Seleccionar...</option>' + 
+      select.innerHTML = '<option value="">Seleccionar...</option>' +
         categories.map(c => `<option value="${c.category_id}">${c.name}</option>`).join('');
     }
   } catch (error) {
