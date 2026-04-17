@@ -1,186 +1,419 @@
-document.addEventListener('DOMContentLoaded', async () => {
-  // Cargar datos iniciales del dashboard
-  await loadDashboardData();
-  
-  // Configurar formularios
-  setupProductForm();
-  setupBatchForm();
-});
-
-async function loadDashboardData() {
+// Cargar datos del dashboard
+async function loadDashboard() {
   try {
     // KPIs
     const kpis = await api.getKPIs();
-    updateKPIs(kpis);
+    document.getElementById('kpi-products').textContent = kpis.active_products;
+    document.getElementById('kpi-batches').textContent = kpis.total_batches;
+    document.getElementById('kpi-expiring').textContent = kpis.expiring_soon;
+    document.getElementById('kpi-critical').textContent = kpis.critical_stock;
     
-    // Productos próximos a vencer
+    // Actualizar badges
+    document.querySelectorAll('[id^="nav-badge-products"]').forEach(b => b.textContent = kpis.active_products);
+    document.querySelectorAll('[id^="nav-badge-alerts"]').forEach(b => b.textContent = kpis.expiring_soon);
+    document.getElementById('banner-alerts').textContent = kpis.expiring_soon + ' alertas';
+    document.getElementById('banner-expiring').textContent = kpis.expiring_soon + ' productos';
+    document.getElementById('login-stat-products').textContent = kpis.active_products + ' productos';
+    document.getElementById('login-stat-alerts').textContent = kpis.expiring_soon + ' alertas';
+    
+    // Próximos a vencer
     const expiring = await api.getExpiringBatches(7);
-    updateExpiringList(expiring);
+    const expiryList = document.getElementById('dashboard-expiry-list');
+    expiryList.innerHTML = expiring.map(batch => {
+      const days = getDaysRemaining(batch.expiry_date);
+      const statusClass = days <= 0 ? 'critical' : days <= 2 ? 'warning' : 'caution';
+      const daysText = days <= 0 ? 'Hoy' : days + ' días';
+      
+      return `
+        <div class="expiry-item ${statusClass}">
+          <div class="expiry-icon"><i class="fas fa-box"></i></div>
+          <div class="expiry-info">
+            <span class="expiry-name">${batch.product_name}</span>
+            <span class="expiry-lot">Lote #${batch.batch_code}</span>
+          </div>
+          <div class="expiry-date">
+            <span class="expiry-badge ${statusClass}">${daysText}</span>
+          </div>
+        </div>
+      `;
+    }).join('');
     
-    // Movimientos recientes
+    // Actividad reciente
     const movements = await api.getRecentMovements();
-    updateActivityList(movements);
+    const activityList = document.getElementById('dashboard-activity-list');
+    activityList.innerHTML = movements.slice(0, 5).map(mov => {
+      const colors = { purchase: 'green', sale: 'blue', waste: 'red', adjustment: 'orange' };
+      return `
+        <div class="activity-item">
+          <div class="activity-dot ${colors[mov.movement_type] || 'blue'}"></div>
+          <div class="activity-info">
+            <span class="activity-text"><strong>${mov.user_name}</strong> ${mov.movement_type} de <strong>${mov.quantity} unid.</strong> ${mov.product_name}</span>
+            <span class="activity-time">${formatDate(mov.datetime)}</span>
+          </div>
+        </div>
+      `;
+    }).join('');
     
-    // Contar productos en alerta
-    updateAlertBadges(expiring.length);
+    // Animar números
+    animateValue('kpi-products', 0, kpis.active_products, 1000);
+    animateValue('kpi-batches', 0, kpis.total_batches, 1000);
+    
   } catch (error) {
     console.error('Error cargando dashboard:', error);
+    showToast('Error', 'No se pudieron cargar los datos', 'error');
   }
 }
 
-function updateKPIs(kpis) {
-  const kpiElements = {
-    'active_products': document.querySelector('.kpi-blue .kpi-value'),
-    'total_batches': document.querySelector('.kpi-green .kpi-value'),
-    'expiring_soon': document.querySelector('.kpi-orange .kpi-value'),
-    'critical_stock': document.querySelector('.kpi-red .kpi-value')
-  };
-  
-  Object.keys(kpiElements).forEach(key => {
-    if (kpiElements[key]) {
-      kpiElements[key].textContent = kpis[key];
-    }
-  });
+// Cargar productos
+async function loadProducts() {
+  try {
+    const [products, categories] = await Promise.all([
+      api.getProducts(),
+      api.getCategories()
+    ]);
+    
+    AppState.products = products;
+    AppState.categories = categories;
+    
+    // Renderizar grid
+    const grid = document.getElementById('products-grid');
+    grid.innerHTML = products.map(p => {
+      const stockPercent = Math.min(100, (Math.random() * 60 + 40)); // Simulado hasta tener stock real
+      const status = stockPercent < 20 ? 'danger' : stockPercent < 50 ? 'warning' : 'ok';
+      const statusText = stockPercent < 20 ? 'Crítico' : stockPercent < 50 ? 'Stock Bajo' : 'En Stock';
+      
+      return `
+        <div class="product-card" onclick="viewProductDetail('${p.sku}')">
+          <div class="pc-image" style="background: linear-gradient(135deg, #dbeafe, #bfdbfe);">
+            <i class="fas fa-box" style="color:#3b82f6;font-size:2.5rem;"></i>
+            <span class="pc-badge ${status}">${statusText}</span>
+          </div>
+          <div class="pc-body">
+            <span class="pc-category">${p.category_name || 'General'}</span>
+            <h4>${p.name}</h4>
+            <p class="pc-sku">SKU: ${p.sku}</p>
+            <div class="pc-stock">
+              <div class="stock-bar"><div class="stock-fill" style="width:${stockPercent}%;background:${status === 'ok' ? '#10b981' : status === 'warning' ? '#f59e0b' : '#ef4444'};"></div></div>
+              <span>Stock disponible</span>
+            </div>
+            <div class="pc-footer">
+              <span class="pc-price">$${parseFloat(p.sale_price).toLocaleString()}</span>
+              <span class="pc-lots">Ver detalle</span>
+            </div>
+          </div>
+        </div>
+      `;
+    }).join('');
+    
+    // Filtros de categoría
+    const filterContainer = document.getElementById('category-filters');
+    filterContainer.innerHTML = `
+      <button class="chip active" onclick="filterProducts('all')">Todos <span class="chip-count">${products.length}</span></button>
+      ${categories.map(c => `<button class="chip" onclick="filterProducts('${c.category_id}')">${c.name} <span class="chip-count">${c.product_count}</span></button>`).join('')}
+    `;
+    
+    document.getElementById('count-all').textContent = products.length;
+    
+  } catch (error) {
+    console.error('Error cargando productos:', error);
+  }
 }
 
-function updateExpiringList(batches) {
-  const container = document.querySelector('.expiry-list');
-  if (!container) return;
-  
-  container.innerHTML = batches.map(batch => {
-    const daysClass = batch.days_remaining <= 0 ? 'critical' : 
-                     batch.days_remaining <= 2 ? 'warning' : 'caution';
-    const daysText = batch.days_remaining <= 0 ? 'Hoy' : 
-                    `${batch.days_remaining} días`;
+function filterProducts(category) {
+  // Implementar filtrado visual aquí
+  document.querySelectorAll('#category-filters .chip').forEach(c => c.classList.remove('active'));
+  event.target.closest('.chip').classList.add('active');
+}
+
+async function viewProductDetail(sku) {
+  try {
+    const product = await api.getProduct(sku);
+    document.getElementById('detail-name').textContent = product.name;
+    document.getElementById('detail-sku').textContent = 'SKU: ' + product.sku;
+    document.getElementById('detail-category').textContent = product.category_name || 'Sin categoría';
+    document.getElementById('detail-desc').textContent = product.description || 'Sin descripción';
+    document.getElementById('detail-unit').textContent = 'Unidad: ' + (product.unit_abbr || 'un');
+    document.getElementById('detail-min-stock').textContent = 'Stock Mínimo: ' + product.min_stock + ' ' + (product.unit_abbr || 'un');
+    document.getElementById('detail-price').textContent = 'Precio: $' + parseFloat(product.sale_price).toLocaleString();
+    document.getElementById('detail-breadcrumb').textContent = 'Productos / ' + product.name;
     
-    return `
-      <div class="expiry-item ${daysClass}">
-        <div class="expiry-icon"><i class="fas fa-box"></i></div>
-        <div class="expiry-info">
-          <span class="expiry-name">${batch.product_name}</span>
-          <span class="expiry-lot">Lote #${batch.batch_code}</span>
+    // Cargar lotes del producto
+    const batches = await api.getBatches();
+    const productBatches = batches.filter(b => b.sku === sku);
+    
+    document.getElementById('detail-lots-table').innerHTML = productBatches.map(b => {
+      const days = getDaysRemaining(b.expiry_date);
+      return `
+        <tr>
+          <td><strong>#${b.batch_code}</strong></td>
+          <td>${formatDate(b.entry_date)}</td>
+          <td>${formatDate(b.expiry_date)}</td>
+          <td>${b.current_quantity}/${b.initial_quantity}</td>
+          <td>${getStatusBadge(days)}</td>
+          <td>
+            <button class="icon-btn-sm"><i class="fas fa-eye"></i></button>
+            <button class="icon-btn-sm" onclick="registerOutput(${b.batch_id})"><i class="fas fa-minus-circle"></i></button>
+          </td>
+        </tr>
+      `;
+    }).join('') || '<tr><td colspan="6" style="text-align:center">No hay lotes activos</td></tr>';
+    
+    navigateTo('screen-product-detail');
+  } catch (error) {
+    showToast('Error', 'No se pudo cargar el producto', 'error');
+  }
+}
+
+// Cargar lotes
+async function loadLots() {
+  try {
+    const batches = await api.getBatches();
+    AppState.batches = batches;
+    
+    const tbody = document.getElementById('lots-table-body');
+    tbody.innerHTML = batches.map((b, index) => {
+      const days = getDaysRemaining(b.expiry_date);
+      const rowClass = days < 0 ? 'row-critical' : days <= 3 ? 'row-warning' : '';
+      const priority = index < 3 ? 'p1' : index < 6 ? 'p2' : 'p3';
+      const priorityIcon = index < 3 ? '🔴' : index < 6 ? '🟠' : '🟢';
+      
+      return `
+        <tr class="${rowClass}">
+          <td><strong>#${b.batch_code}</strong></td>
+          <td><div class="td-product"><i class="fas fa-box"></i> ${b.product_name}</div></td>
+          <td>${formatDate(b.entry_date)}</td>
+          <td>${formatDate(b.expiry_date)}</td>
+          <td>
+            <div class="mini-stock">
+              <div class="stock-bar"><div class="stock-fill" style="width:${(b.current_quantity/b.initial_quantity)*100}%;background:${days < 0 ? '#ef4444' : days < 3 ? '#f59e0b' : '#10b981'};"></div></div>
+              <span>${b.current_quantity}/${b.initial_quantity}</span>
+            </div>
+          </td>
+          <td>${b.warehouse_location || '-'}</td>
+          <td>${getStatusBadge(days)}</td>
+          <td><span class="peps-priority ${priority}">${priorityIcon} ${index + 1}°</span></td>
+          <td>
+            <button class="icon-btn-sm"><i class="fas fa-eye"></i></button>
+            <button class="icon-btn-sm" onclick="registerOutput(${b.batch_id})"><i class="fas fa-minus-circle"></i></button>
+          </td>
+        </tr>
+      `;
+    }).join('');
+    
+  } catch (error) {
+    console.error('Error cargando lotes:', error);
+  }
+}
+
+// Preparar formulario de lotes
+async function prepareLotForm() {
+  try {
+    const [products, suppliers] = await Promise.all([
+      api.getProducts(),
+      api.getSuppliers()
+    ]);
+    
+    const productSelect = document.getElementById('lot-product-select');
+    const supplierSelect = document.getElementById('lot-supplier-select');
+    
+    productSelect.innerHTML = '<option value="">Seleccionar producto...</option>' + 
+      products.map(p => `<option value="${p.sku}">${p.name}</option>`).join('');
+    
+    supplierSelect.innerHTML = '<option value="">Seleccionar proveedor...</option>' + 
+      suppliers.map(s => `<option value="${s.supplier_id}">${s.name}</option>`).join('');
+      
+    // Setear fecha de hoy
+    const today = new Date().toISOString().split('T')[0];
+    document.querySelector('input[name="entry_date"]').value = today;
+    
+  } catch (error) {
+    console.error('Error preparando formulario:', error);
+  }
+}
+
+// Crear lote
+document.addEventListener('DOMContentLoaded', () => {
+  const lotForm = document.getElementById('lot-form');
+  if (lotForm) {
+    lotForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const formData = new FormData(lotForm);
+      const data = Object.fromEntries(formData);
+      
+      // Convertir a números donde sea necesario
+      data.supplier_id = data.supplier_id || null;
+      data.initial_quantity = parseFloat(data.initial_quantity);
+      data.unit_cost = parseFloat(data.unit_cost) || 0;
+      
+      try {
+        const res = await api.createBatch(data);
+        if (res.ok) {
+          showToast('Éxito', 'Lote registrado correctamente', 'success');
+          lotForm.reset();
+          navigateTo('screen-lots');
+        } else {
+          const err = await res.json();
+          showToast('Error', err.error || 'No se pudo registrar el lote', 'error');
+        }
+      } catch (error) {
+        showToast('Error', 'Error de conexión', 'error');
+      }
+    });
+  }
+  
+  // Crear producto
+  const productForm = document.getElementById('new-product-form');
+  if (productForm) {
+    productForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const formData = new FormData(productForm);
+      const data = Object.fromEntries(formData);
+      
+      data.sale_price = parseFloat(data.sale_price);
+      data.min_stock = parseFloat(data.min_stock) || 0;
+      data.category_id = data.category_id || null;
+      data.requires_refrigeration = data.requires_refrigeration ? true : false;
+      
+      try {
+        const res = await api.createProduct(data);
+        if (res.ok) {
+          showToast('Éxito', 'Producto creado correctamente', 'success');
+          closeNewProductPanel();
+          productForm.reset();
+          loadProducts();
+        } else {
+          const err = await res.json();
+          showToast('Error', err.error || 'No se pudo crear el producto', 'error');
+        }
+      } catch (error) {
+        showToast('Error', 'Error de conexión', 'error');
+      }
+    });
+  }
+});
+
+// Cargar alertas
+async function loadAlerts() {
+  try {
+    const expiring = await api.getExpiringBatches(30);
+    
+    document.getElementById('alert-expired').textContent = expiring.filter(b => getDaysRemaining(b.expiry_date) < 0).length;
+    document.getElementById('alert-today').textContent = expiring.filter(b => getDaysRemaining(b.expiry_date) === 0).length;
+    document.getElementById('alert-week').textContent = expiring.filter(b => {
+      const d = getDaysRemaining(b.expiry_date);
+      return d > 0 && d <= 7;
+    }).length;
+    document.getElementById('alert-stock').textContent = '3'; // Simulado
+    
+    const container = document.getElementById('alerts-container');
+    container.innerHTML = expiring.map(batch => {
+      const days = getDaysRemaining(batch.expiry_date);
+      let typeClass = 'alert-warning';
+      let icon = 'fa-clock';
+      let title = 'Próximo a Vencer';
+      
+      if (days < 0) {
+        typeClass = 'alert-critical';
+        icon = 'fa-skull-crossbones';
+        title = 'Producto VENCIDO';
+      } else if (days === 0) {
+        typeClass = 'alert-danger';
+        icon = 'fa-exclamation-circle';
+        title = 'Vence HOY';
+      }
+      
+      return `
+        <div class="alert-item ${typeClass}">
+          <div class="alert-icon-wrap ${days < 0 ? 'critical' : days === 0 ? 'danger' : 'warning'}">
+            <i class="fas ${icon}"></i>
+          </div>
+          <div class="alert-content">
+            <div class="alert-header-row">
+              <h4>${title} - ${batch.product_name}</h4>
+              <span class="alert-time">${formatDate(batch.expiry_date)}</span>
+            </div>
+            <p>Lote #${batch.batch_code} - ${days < 0 ? 'Vencido hace ' + Math.abs(days) + ' días' : days === 0 ? 'Vence hoy' : days + ' días restantes'}</p>
+            <div class="alert-actions">
+              <button class="btn-outline btn-sm">Ver Lote</button>
+              ${days < 0 ? '<button class="btn-danger btn-sm">Registrar Merma</button>' : ''}
+            </div>
+          </div>
         </div>
-        <div class="expiry-date">
-          <span class="expiry-badge ${daysClass}">${daysText}</span>
+      `;
+    }).join('');
+    
+  } catch (error) {
+    console.error('Error cargando alertas:', error);
+  }
+}
+
+// Cargar proveedores
+async function loadSuppliers() {
+  try {
+    const suppliers = await api.getSuppliers();
+    const grid = document.getElementById('suppliers-grid');
+    
+    grid.innerHTML = suppliers.map(s => `
+      <div class="supplier-card">
+        <div class="sc-header">
+          <div class="sc-avatar" style="background:#dbeafe;color:#3b82f6;">${s.name.substring(0,2).toUpperCase()}</div>
+          <div class="sc-info"><h4>${s.name}</h4><span class="sc-type">Proveedor</span></div>
+          <span class="status-badge ok">Activo</span>
+        </div>
+        <div class="sc-body">
+          <div class="sc-detail"><i class="fas fa-phone"></i> ${s.phone || 'N/A'}</div>
+          <div class="sc-detail"><i class="fas fa-envelope"></i> ${s.email || 'N/A'}</div>
+          <div class="sc-stats">
+            <div class="sc-stat"><span class="sc-stat-val">${s.product_count}</span><span class="sc-stat-lbl">Productos</span></div>
+            <div class="sc-stat"><span class="sc-stat-val">${s.batch_count}</span><span class="sc-stat-lbl">Lotes</span></div>
+          </div>
+        </div>
+        <div class="sc-footer">
+          <button class="btn-outline btn-sm"><i class="fas fa-eye"></i> Ver</button>
         </div>
       </div>
-    `;
-  }).join('');
-}
-
-function updateActivityList(movements) {
-  const container = document.querySelector('.activity-list');
-  if (!container) return;
-  
-  container.innerHTML = movements.slice(0, 5).map(mov => {
-    const typeColors = {
-      'purchase': 'green',
-      'sale': 'blue', 
-      'waste': 'red',
-      'adjustment': 'orange',
-      'adjustment_neg': 'orange'
-    };
+    `).join('');
     
-    return `
-      <div class="activity-item">
-        <div class="activity-dot ${typeColors[mov.movement_type] || 'blue'}"></div>
-        <div class="activity-info">
-          <span class="activity-text">
-            <strong>${mov.user_name}</strong> ${mov.movement_type} de 
-            <strong>${mov.quantity} ${mov.sign === '+' ? 'unid.' : 'unid.'}</strong> 
-            ${mov.product_name}
-          </span>
-          <span class="activity-time">${new Date(mov.datetime).toLocaleString()}</span>
-        </div>
-      </div>
-    `;
-  }).join('');
+  } catch (error) {
+    console.error('Error cargando proveedores:', error);
+  }
 }
 
-function updateAlertBadges(count) {
-  document.querySelectorAll('.badge-danger').forEach(badge => {
-    badge.textContent = count;
-  });
-}
-
-function setupProductForm() {
-  const form = document.getElementById('new-product-form');
-  if (!form) return;
-  
-  // Cargar categorías en el select
-  api.getCategories().then(cats => {
-    const select = form.querySelector('select[name="category_id"]');
+// Cargar categorías en select
+async function loadCategoriesSelect() {
+  try {
+    const categories = await api.getCategories();
+    const select = document.getElementById('new-product-category');
     if (select) {
-      select.innerHTML = '<option value="">Seleccionar...</option>' +
-        cats.map(c => `<option value="${c.category_id}">${c.name}</option>`).join('');
+      select.innerHTML = '<option value="">Seleccionar...</option>' + 
+        categories.map(c => `<option value="${c.category_id}">${c.name}</option>`).join('');
     }
-  });
-  
-  form.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const formData = new FormData(form);
-    const data = Object.fromEntries(formData);
-    
-    try {
-      const res = await api.createProduct(data);
-      if (res.ok) {
-        showToast('Producto creado exitosamente', 'success');
-        closeNewProductPanel();
-        form.reset();
-        loadDashboardData(); // Recargar
-      } else {
-        showToast('Error al crear producto', 'error');
-      }
-    } catch (err) {
-      showToast('Error de conexión', 'error');
-    }
-  });
+  } catch (error) {
+    console.error('Error cargando categorías:', error);
+  }
 }
 
-function setupBatchForm() {
-  const form = document.querySelector('.lot-form');
-  if (!form) return;
-  
-  // Cargar productos en selects
-  api.getProducts().then(products => {
-    const selects = document.querySelectorAll('select[name="product_sku"]');
-    selects.forEach(select => {
-      select.innerHTML = '<option value="">Seleccionar producto...</option>' +
-        products.map(p => `<option value="${p.sku}">${p.name} (${p.sku})</option>`).join('');
-    });
-  });
-  
-  // Cargar proveedores
-  api.getSuppliers().then(suppliers => {
-    const selects = document.querySelectorAll('select[name="supplier_id"]');
-    selects.forEach(select => {
-      select.innerHTML = '<option value="">Seleccionar proveedor...</option>' +
-        suppliers.map(s => `<option value="${s.supplier_id}">${s.name}</option>`).join('');
-    });
-  });
-  
-  form.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const data = Object.fromEntries(new FormData(form));
-    
-    try {
-      const res = await api.createBatch(data);
-      if (res.ok) {
-        showToast('Lote registrado exitosamente', 'success');
-        navigateTo('screen-lots');
-        form.reset();
-      }
-    } catch (err) {
-      showToast('Error al registrar lote', 'error');
+// Animación de números
+function animateValue(id, start, end, duration) {
+  const obj = document.getElementById(id);
+  if (!obj) return;
+  let startTimestamp = null;
+  const step = (timestamp) => {
+    if (!startTimestamp) startTimestamp = timestamp;
+    const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+    obj.innerHTML = Math.floor(progress * (end - start) + start);
+    if (progress < 1) {
+      window.requestAnimationFrame(step);
     }
-  });
+  };
+  window.requestAnimationFrame(step);
 }
 
-// Función global para toasts (compatibilidad con utils.js existente)
-function showToast(title, type = 'success') {
-  if (window.showToast && window.showToast !== showToast) {
-    window.showToast(title, type === 'success' ? 'Operación exitosa' : 'Error', type);
-  } else {
-    alert(title);
+// Registrar salida (simulado)
+function registerOutput(batchId) {
+  const quantity = prompt('Ingrese cantidad a retirar:');
+  if (quantity && !isNaN(quantity)) {
+    showToast('Éxito', `Se registraron ${quantity} unidades de salida`, 'success');
+    loadLots(); // Recargar
   }
 }
