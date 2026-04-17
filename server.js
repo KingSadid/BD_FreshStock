@@ -11,10 +11,13 @@ const movementRoutes = require("./routes/movements.routes");
 const dashboardRoutes = require("./routes/dashboard.routes");
 const userRoutes = require("./routes/users.routes");
 
+const cors = require("cors");
+
 const PORT = 5000;
 const api = express();
 
 // Middleware
+api.use(cors());
 api.use(express.json());
 api.use(express.static("public"));
 

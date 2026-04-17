@@ -409,8 +409,8 @@
           <div class="top-bar-right">
             <button class="icon-btn theme-toggle-btn" data-action="toggle-theme"><i class="fas fa-moon"></i><i
                 class="fas fa-sun"></i></button>
-            <button class="btn-outline"><i class="fas fa-edit"></i> Editar</button>
-            <button class="btn-danger-outline"><i class="fas fa-trash"></i> Eliminar</button>
+            <button class="btn-outline" id="btn-edit-product"><i class="fas fa-edit"></i> Editar</button>
+            <button class="btn-danger-outline" id="btn-delete-product"><i class="fas fa-trash"></i> Eliminar</button>
           </div>
         </header>
         <div class="content-area">
@@ -803,11 +803,12 @@
   <div class="slide-backdrop" id="new-product-backdrop" data-action="close-new-product"></div>
   <div class="slide-panel" id="new-product-panel">
     <div class="slide-panel-header">
-      <h2><i class="fas fa-box-open"></i> Nuevo Producto</h2>
+      <h2 id="product-panel-title"><i class="fas fa-box-open"></i> Nuevo Producto</h2>
       <button class="icon-btn-sm" data-action="close-new-product"><i class="fas fa-times"></i></button>
     </div>
     <div class="slide-panel-body">
       <form id="new-product-form" class="standard-form">
+        <input type="hidden" name="form_mode" id="product-form-mode" value="create">
         <div class="form-group slide-stagger">
           <label>SKU *</label>
           <div class="input-icon">

@@ -142,7 +142,16 @@ document.addEventListener('DOMContentLoaded', () => {
             const act = action.getAttribute('data-action');
             if (act === 'toggle-theme') toggleTheme();
             if (act === 'toggle-sidebar') toggleSidebar();
-            if (act === 'open-new-product') openNewProductPanel();
+            if (act === 'open-new-product') {
+                const form = document.getElementById('new-product-form');
+                if (form) {
+                    form.reset();
+                    form.sku.readOnly = false;
+                    document.getElementById('product-form-mode').value = 'create';
+                    document.getElementById('product-panel-title').innerHTML = `<i class="fas fa-box-open"></i> Nuevo Producto`;
+                }
+                openNewProductPanel();
+            }
             if (act === 'close-new-product') closeNewProductPanel();
         }
     });

@@ -12,6 +12,14 @@ const api = {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data)
   }),
+  updateProduct: (sku, data) => fetch(`${API_BASE}/api/products/${sku}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
+  }),
+  deleteProduct: (sku) => fetch(`${API_BASE}/api/products/${sku}`, {
+    method: 'DELETE'
+  }),
   
   // Lotes
   getBatches: (status = '') => fetch(`${API_BASE}/api/batches${status ? '?status='+status : ''}`).then(r => r.json()),

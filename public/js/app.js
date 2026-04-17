@@ -158,6 +158,10 @@ async function viewProductDetail(sku) {
       `;
     }).join('') || '<tr><td colspan="6" style="text-align:center">No hay lotes activos</td></tr>';
 
+    // Botones de acción
+    document.getElementById('btn-edit-product').onclick = () => editProduct(product);
+    document.getElementById('btn-delete-product').onclick = () => deleteProductConfirm(product.sku);
+
     navigateTo('screen-product-detail');
   } catch (error) {
     showToast('Error', 'No se pudo cargar el producto', 'error');
@@ -275,12 +279,17 @@ document.addEventListener('DOMContentLoaded', () => {
       data.requires_refrigeration = data.requires_refrigeration ? true : false;
 
       try {
-        const res = await api.createProduct(data);
+        const isEdit = data.form_mode === 'edit';
+        const res = isEdit 
+          ? await api.updateProduct(data.sku, data)
+          : await api.createProduct(data);
+
         if (res.ok) {
-          showToast('Éxito', 'Producto creado correctamente', 'success');
+          showToast('Éxito', isEdit ? 'Producto actualizado' : 'Producto creado', 'success');
           closeNewProductPanel();
           productForm.reset();
           loadProducts();
+          if (isEdit) navigateTo('screen-products');
         } else {
           const err = await res.json();
           showToast('Error', err.error || 'No se pudo crear el producto', 'error');
@@ -390,6 +399,46 @@ async function loadCategoriesSelect() {
     }
   } catch (error) {
     console.error('Error cargando categorías:', error);
+  }
+}
+
+// CRUD: Editar producto
+function editProduct(product) {
+  const form = document.getElementById('new-product-form');
+  document.getElementById('product-panel-title').innerHTML = `<i class="fas fa-edit"></i> Editar Producto: ${product.sku}`;
+  document.getElementById('product-form-mode').value = 'edit';
+  
+  // Llenar campos
+  form.sku.value = product.sku;
+  form.sku.readOnly = true; // No permitir cambiar SKU en edición
+  form.name.value = product.name;
+  form.description.value = product.description || '';
+  form.category_id.value = product.category_id || '';
+  form.unit_id.value = product.unit_id || 5;
+  form.sale_price.value = product.sale_price;
+  form.min_stock.value = product.min_stock;
+  form.barcode.value = product.barcode || '';
+  form.requires_refrigeration.checked = product.requires_refrigeration ? true : false;
+
+  openNewProductPanel();
+}
+
+// CRUD: Eliminar producto
+async function deleteProductConfirm(sku) {
+  if (confirm(`¿Estás seguro de eliminar el producto ${sku}? This cannot be undone.`)) {
+    try {
+      const res = await api.deleteProduct(sku);
+      if (res.ok) {
+        showToast('Éxito', 'Producto eliminado exitosamente', 'success');
+        loadProducts();
+        navigateTo('screen-products');
+      } else {
+        const err = await res.json();
+        showToast('Error', err.error || 'No se pudo eliminar', 'error');
+      }
+    } catch (error) {
+      showToast('Error', 'Error de conexión', 'error');
+    }
   }
 }
 
