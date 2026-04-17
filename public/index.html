@@ -2,42 +2,909 @@
 <html lang="es">
 
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Test index</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FreshStock - Sistema de Gestión de Inventarios</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
+    rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css">
+  <script>
+    if (localStorage.getItem('freshstock-theme') === 'dark') {
+      document.documentElement.setAttribute('data-theme', 'dark');
+    }
+  </script>
 </head>
 
 <body>
-  <div>
-    <h1>SQL Operations</h1>
 
-    <section>
-      <h2>Post Operation</h2>
-        <label for="name">Name:</label><br>
-        <input type="text" id="name" name="name" required><br><br>
-        <label for="birthdate">Birthdate:</label><br>
-        <input type="date" id="birthdate" name="birthdate" required><br><br>
-
-        <button id="postBtn">Send</button>
-      <p id="postSqlResult"></p>
-    </section>
-
-    <section>
-      <h2>Get All Entries</h2>
-      <button id="getAllBtn">Get All</button>
-      <ul id="getAllResult"></ul>
-    </section>
-
-    <section>
-      <h2>Get Entry by ID</h2>
-        <label for="id">id:</label><br>
-        <input type="text" id="id" name="id" required><br><br>
-        <button id="getOneBtn">Send</button>
-      <ul id="getOneResult"></ul>
-    </section>
+  <!-- ==================== LOGIN SCREEN ==================== -->
+  <div id="screen-login" class="screen active">
+    <button class="icon-btn theme-toggle-btn login-theme-btn" data-action="toggle-theme">
+      <i class="fas fa-moon"></i><i class="fas fa-sun"></i>
+    </button>
+    <div class="login-container">
+      <div class="login-left">
+        <div class="login-brand-area">
+          <div class="floating-elements">
+            <div class="float-card fc1"><i class="fas fa-box-open"></i><span id="login-stat-products">0 productos</span>
+            </div>
+            <div class="float-card fc2"><i class="fas fa-chart-line"></i><span>+12% ventas</span></div>
+            <div class="float-card fc3"><i class="fas fa-bell"></i><span id="login-stat-alerts">0 alertas</span></div>
+            <div class="float-card fc4"><i class="fas fa-leaf"></i><span>0% merma</span></div>
+          </div>
+          <div class="login-hero-text">
+            <div class="logo-big">
+              <div class="logo-icon-big"><i class="fas fa-seedling"></i></div>
+              <h1>Fresh<span>Stock</span></h1>
+            </div>
+            <p class="hero-subtitle">Gestión inteligente de inventarios y caducidad para tu negocio</p>
+            <div class="hero-features">
+              <div class="hf"><i class="fas fa-check-circle"></i> Control en tiempo real</div>
+              <div class="hf"><i class="fas fa-check-circle"></i> Alertas de caducidad</div>
+              <div class="hf"><i class="fas fa-check-circle"></i> Método PEPS automático</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="login-right">
+        <div class="login-form-container">
+          <div class="login-form-header">
+            <div class="logo-small"><i class="fas fa-seedling"></i> FreshStock</div>
+            <h2>Bienvenido de vuelta</h2>
+            <p>Ingresa tus credenciales para continuar</p>
+          </div>
+          <form class="login-form" id="login-form">
+            <div class="form-group">
+              <label>Correo electrónico</label>
+              <div class="input-icon">
+                <i class="fas fa-envelope"></i>
+                <input type="email" id="login-email" placeholder="tu@correo.com" value="admin@freshstock.com" required>
+              </div>
+            </div>
+            <div class="form-group">
+              <label>Contraseña</label>
+              <div class="input-icon">
+                <i class="fas fa-lock"></i>
+                <input type="password" id="login-password" placeholder="••••••••" value="password123">
+                <i class="fas fa-eye toggle-pass"></i>
+              </div>
+            </div>
+            <div class="form-options">
+              <label class="checkbox-custom"><input type="checkbox" checked><span class="checkmark"></span>
+                Recordarme</label>
+              <a href="#">¿Olvidaste tu contraseña?</a>
+            </div>
+            <button type="submit" class="btn-primary btn-full">
+              <span>Iniciar Sesión</span>
+              <i class="fas fa-arrow-right"></i>
+            </button>
+          </form>
+          <p class="login-footer">¿No tienes cuenta? <a href="#">Solicitar acceso</a></p>
+        </div>
+      </div>
+    </div>
   </div>
 
-  <script src="./js/sql.js"></script>
+  <!-- ==================== DASHBOARD ==================== -->
+  <div id="screen-dashboard" class="screen">
+    <div class="app-layout">
+      <nav class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+          <div class="logo-small"><i class="fas fa-seedling"></i> <span>FreshStock</span></div>
+          <button class="sidebar-toggle" data-action="toggle-sidebar"><i class="fas fa-bars"></i></button>
+        </div>
+        <div class="sidebar-user">
+          <div class="user-avatar">SA</div>
+          <div class="user-info">
+            <span class="user-name">Sadid Acosta</span>
+            <span class="user-role">Administrador</span>
+          </div>
+        </div>
+        <ul class="sidebar-menu">
+          <li class="menu-label">Principal</li>
+          <li class="active" data-navigate="screen-dashboard"><i class="fas fa-th-large"></i><span>Dashboard</span></li>
+          <li data-navigate="screen-products"><i class="fas fa-box-open"></i><span>Productos</span><span class="badge"
+              id="nav-badge-products">0</span></li>
+          <li data-navigate="screen-lots"><i class="fas fa-layer-group"></i><span>Lotes</span></li>
+          <li class="menu-label">Gestión</li>
+          <li data-navigate="screen-alerts"><i class="fas fa-bell"></i><span>Alertas</span><span
+              class="badge badge-danger" id="nav-badge-alerts">0</span></li>
+          <li data-navigate="screen-suppliers"><i class="fas fa-truck"></i><span>Proveedores</span></li>
+          <li data-navigate="screen-users"><i class="fas fa-users-cog"></i><span>Usuarios</span></li>
+          <li class="menu-label">Análisis</li>
+          <li data-navigate="screen-reports"><i class="fas fa-chart-bar"></i><span>Reportes</span></li>
+        </ul>
+        <div class="sidebar-footer">
+          <div class="sidebar-footer-item" data-navigate="screen-login"><i class="fas fa-sign-out-alt"></i><span>Cerrar
+              Sesión</span></div>
+        </div>
+      </nav>
+      <main class="main-content" id="main-dashboard">
+        <header class="top-bar">
+          <div class="top-bar-left">
+            <button class="mobile-menu" data-action="toggle-sidebar"><i class="fas fa-bars"></i></button>
+            <div class="page-title">
+              <h1>Dashboard</h1>
+              <p class="breadcrumb">Inicio / Vista General</p>
+            </div>
+          </div>
+          <div class="top-bar-right">
+            <button class="icon-btn theme-toggle-btn" data-action="toggle-theme"><i class="fas fa-moon"></i><i
+                class="fas fa-sun"></i></button>
+            <div class="search-bar">
+              <i class="fas fa-search"></i>
+              <input type="text" placeholder="Buscar productos, lotes..." id="global-search">
+            </div>
+            <button class="icon-btn" data-navigate="screen-alerts"><i class="fas fa-bell"></i><span
+                class="notif-dot"></span></button>
+            <div class="user-menu">
+              <div class="user-avatar-sm">SA</div>
+            </div>
+          </div>
+        </header>
+        <div class="content-area">
+          <!-- Welcome Banner -->
+          <div class="welcome-banner">
+            <div class="wb-text">
+              <h2>¡Buenos días, Sadid! 👋</h2>
+              <p>Tienes <strong id="banner-alerts">0 alertas</strong> pendientes y <strong id="banner-expiring">0
+                  productos</strong> próximos a vencer hoy.</p>
+              <button class="btn-primary btn-sm" data-navigate="screen-alerts">Ver Alertas <i
+                  class="fas fa-arrow-right"></i></button>
+            </div>
+            <div class="wb-illustration">
+              <i class="fas fa-chart-pie"></i>
+            </div>
+          </div>
+          <!-- KPI Cards -->
+          <div class="kpi-grid">
+            <div class="kpi-card kpi-blue">
+              <div class="kpi-icon"><i class="fas fa-box-open"></i></div>
+              <div class="kpi-data">
+                <span class="kpi-value" id="kpi-products">0</span>
+                <span class="kpi-label">Productos Activos</span>
+              </div>
+              <div class="kpi-trend up"><i class="fas fa-arrow-up"></i> 12%</div>
+            </div>
+            <div class="kpi-card kpi-green">
+              <div class="kpi-icon"><i class="fas fa-layer-group"></i></div>
+              <div class="kpi-data">
+                <span class="kpi-value" id="kpi-batches">0</span>
+                <span class="kpi-label">Lotes Registrados</span>
+              </div>
+              <div class="kpi-trend up"><i class="fas fa-arrow-up"></i> 8%</div>
+            </div>
+            <div class="kpi-card kpi-orange">
+              <div class="kpi-icon"><i class="fas fa-exclamation-triangle"></i></div>
+              <div class="kpi-data">
+                <span class="kpi-value" id="kpi-expiring">0</span>
+                <span class="kpi-label">Próximos a Vencer</span>
+              </div>
+              <div class="kpi-trend down"><i class="fas fa-arrow-down"></i> 5%</div>
+            </div>
+            <div class="kpi-card kpi-red">
+              <div class="kpi-icon"><i class="fas fa-times-circle"></i></div>
+              <div class="kpi-data">
+                <span class="kpi-value" id="kpi-critical">0</span>
+                <span class="kpi-label">Stock Crítico</span>
+              </div>
+              <div class="kpi-trend down"><i class="fas fa-arrow-up"></i> 2</div>
+            </div>
+          </div>
+          <!-- Charts Row -->
+          <div class="charts-row">
+            <div class="chart-card wide">
+              <div class="card-header">
+                <h3>Movimientos de Inventario</h3>
+                <div class="card-actions">
+                  <button class="chip active">Semana</button>
+                  <button class="chip">Mes</button>
+                  <button class="chip">Año</button>
+                </div>
+              </div>
+              <div class="chart-placeholder">
+                <svg viewBox="0 0 600 200" class="line-chart-svg">
+                  <defs>
+                    <linearGradient id="grad1" x1="0%" y1="0%" x2="0%" y2="100%">
+                      <stop offset="0%" style="stop-color:#10b981;stop-opacity:0.3" />
+                      <stop offset="100%" style="stop-color:#10b981;stop-opacity:0" />
+                    </linearGradient>
+                    <linearGradient id="grad2" x1="0%" y1="0%" x2="0%" y2="100%">
+                      <stop offset="0%" style="stop-color:#6366f1;stop-opacity:0.3" />
+                      <stop offset="100%" style="stop-color:#6366f1;stop-opacity:0" />
+                    </linearGradient>
+                  </defs>
+                  <path d="M0,150 Q75,120 150,100 T300,80 T450,60 T600,40 V200 H0 Z" fill="url(#grad1)" />
+                  <path d="M0,150 Q75,120 150,100 T300,80 T450,60 T600,40" fill="none" stroke="#10b981"
+                    stroke-width="3" />
+                  <path d="M0,170 Q75,140 150,130 T300,120 T450,110 T600,90 V200 H0 Z" fill="url(#grad2)" />
+                  <path d="M0,170 Q75,140 150,130 T300,120 T450,110 T600,90" fill="none" stroke="#6366f1"
+                    stroke-width="3" />
+                  <circle cx="150" cy="100" r="5" fill="#10b981" />
+                  <circle cx="300" cy="80" r="5" fill="#10b981" />
+                  <circle cx="450" cy="60" r="5" fill="#10b981" />
+                  <circle cx="150" cy="130" r="5" fill="#6366f1" />
+                  <circle cx="300" cy="120" r="5" fill="#6366f1" />
+                  <circle cx="450" cy="110" r="5" fill="#6366f1" />
+                  <text x="0" y="195" fill="var(--text-muted)" font-size="11">Lun</text>
+                  <text x="100" y="195" fill="var(--text-muted)" font-size="11">Mar</text>
+                  <text x="200" y="195" fill="var(--text-muted)" font-size="11">Mié</text>
+                  <text x="300" y="195" fill="var(--text-muted)" font-size="11">Jue</text>
+                  <text x="400" y="195" fill="var(--text-muted)" font-size="11">Vie</text>
+                  <text x="500" y="195" fill="var(--text-muted)" font-size="11">Sáb</text>
+                  <text x="570" y="195" fill="var(--text-muted)" font-size="11">Dom</text>
+                </svg>
+                <div class="chart-legend">
+                  <span class="legend-item"><span class="legend-dot" style="background:#10b981"></span> Entradas</span>
+                  <span class="legend-item"><span class="legend-dot" style="background:#6366f1"></span> Salidas</span>
+                </div>
+              </div>
+            </div>
+            <div class="chart-card">
+              <div class="card-header">
+                <h3>Categorías</h3>
+                <button class="icon-btn-sm"><i class="fas fa-ellipsis-v"></i></button>
+              </div>
+              <div class="donut-chart">
+                <svg viewBox="0 0 200 200" class="donut-svg">
+                  <circle cx="100" cy="100" r="80" fill="none" stroke="var(--border)" stroke-width="24" />
+                  <circle cx="100" cy="100" r="80" fill="none" stroke="#10b981" stroke-width="24"
+                    stroke-dasharray="150 503" stroke-dashoffset="0" class="donut-seg" />
+                  <circle cx="100" cy="100" r="80" fill="none" stroke="#6366f1" stroke-width="24"
+                    stroke-dasharray="120 503" stroke-dashoffset="-150" class="donut-seg" />
+                  <circle cx="100" cy="100" r="80" fill="none" stroke="#f59e0b" stroke-width="24"
+                    stroke-dasharray="100 503" stroke-dashoffset="-270" class="donut-seg" />
+                  <circle cx="100" cy="100" r="80" fill="none" stroke="#ef4444" stroke-width="24"
+                    stroke-dasharray="80 503" stroke-dashoffset="-370" class="donut-seg" />
+                  <text x="100" y="95" text-anchor="middle" fill="var(--text)" font-size="24" font-weight="700"
+                    id="donut-total">324</text>
+                  <text x="100" y="115" text-anchor="middle" fill="var(--text-muted)" font-size="12">productos</text>
+                </svg>
+                <div class="donut-legend" id="categories-legend">
+                  <!-- Se llena dinámicamente -->
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- Recent Activity & Expiring -->
+          <div class="charts-row">
+            <div class="chart-card">
+              <div class="card-header">
+                <h3>⚠️ Próximos a Vencer</h3>
+                <a href="#" data-navigate="screen-alerts">Ver todos</a>
+              </div>
+              <div class="expiry-list" id="dashboard-expiry-list">
+                <!-- Se llena dinámicamente -->
+              </div>
+            </div>
+            <div class="chart-card">
+              <div class="card-header">
+                <h3>📋 Actividad Reciente</h3>
+                <a href="#" data-navigate="screen-reports">Ver historial</a>
+              </div>
+              <div class="activity-list" id="dashboard-activity-list">
+                <!-- Se llena dinámicamente -->
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <!-- ==================== PRODUCTS CATALOG ==================== -->
+  <div id="screen-products" class="screen">
+    <div class="app-layout">
+      <nav class="sidebar" id="sidebar2">
+        <div class="sidebar-header">
+          <div class="logo-small"><i class="fas fa-seedling"></i> <span>FreshStock</span></div>
+          <button class="sidebar-toggle" data-action="toggle-sidebar"><i class="fas fa-bars"></i></button>
+        </div>
+        <div class="sidebar-user">
+          <div class="user-avatar">SA</div>
+          <div class="user-info"><span class="user-name">Sadid Acosta</span><span class="user-role">Administrador</span>
+          </div>
+        </div>
+        <ul class="sidebar-menu">
+          <li data-navigate="screen-dashboard"><i class="fas fa-th-large"></i><span>Dashboard</span></li>
+          <li class="active" data-navigate="screen-products"><i class="fas fa-box-open"></i><span>Productos</span><span
+              class="badge" id="nav-badge-products2">0</span></li>
+          <li data-navigate="screen-lots"><i class="fas fa-layer-group"></i><span>Lotes</span></li>
+          <li data-navigate="screen-alerts"><i class="fas fa-bell"></i><span>Alertas</span><span
+              class="badge badge-danger" id="nav-badge-alerts2">0</span></li>
+          <li data-navigate="screen-suppliers"><i class="fas fa-truck"></i><span>Proveedores</span></li>
+          <li data-navigate="screen-users"><i class="fas fa-users-cog"></i><span>Usuarios</span></li>
+          <li data-navigate="screen-reports"><i class="fas fa-chart-bar"></i><span>Reportes</span></li>
+        </ul>
+        <div class="sidebar-footer">
+          <div class="sidebar-footer-item" data-navigate="screen-login"><i class="fas fa-sign-out-alt"></i><span>Cerrar
+              Sesión</span></div>
+        </div>
+      </nav>
+      <main class="main-content">
+        <header class="top-bar">
+          <div class="top-bar-left">
+            <div class="page-title">
+              <h1>Catálogo de Productos</h1>
+              <p class="breadcrumb">Inicio / Productos</p>
+            </div>
+          </div>
+          <div class="top-bar-right">
+            <button class="icon-btn theme-toggle-btn" data-action="toggle-theme"><i class="fas fa-moon"></i><i
+                class="fas fa-sun"></i></button>
+            <div class="search-bar"><i class="fas fa-search"></i><input type="text" placeholder="Buscar productos..."
+                id="product-search"></div>
+            <button class="icon-btn" data-navigate="screen-alerts"><i class="fas fa-bell"></i><span
+                class="notif-dot"></span></button>
+          </div>
+        </header>
+        <div class="content-area">
+          <!-- Filters Bar -->
+          <div class="filters-bar">
+            <div class="filters-left" id="category-filters">
+              <button class="chip active" data-filter="all">Todos <span class="chip-count"
+                  id="count-all">0</span></button>
+              <!-- Se llenan dinámicamente -->
+            </div>
+            <div class="filters-right">
+              <button class="btn-outline"><i class="fas fa-filter"></i> Filtros</button>
+              <button class="btn-outline"><i class="fas fa-sort-amount-down"></i> Ordenar</button>
+              <button class="btn-primary" data-action="open-new-product"><i class="fas fa-plus"></i> Nuevo
+                Producto</button>
+            </div>
+          </div>
+          <!-- Product Grid -->
+          <div class="product-grid" id="products-grid">
+            <!-- Se llena dinámicamente -->
+          </div>
+          <div class="pagination">
+            <button class="page-btn active">1</button>
+            <button class="page-btn">2</button>
+            <button class="page-btn">3</button>
+            <span>...</span>
+            <button class="page-btn">12</button>
+            <button class="page-btn"><i class="fas fa-chevron-right"></i></button>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <!-- ==================== PRODUCT DETAIL ==================== -->
+  <div id="screen-product-detail" class="screen">
+    <div class="app-layout">
+      <nav class="sidebar">
+        <div class="sidebar-header">
+          <div class="logo-small"><i class="fas fa-seedling"></i> <span>FreshStock</span></div>
+          <button class="sidebar-toggle" data-action="toggle-sidebar"><i class="fas fa-bars"></i></button>
+        </div>
+        <div class="sidebar-user">
+          <div class="user-avatar">SA</div>
+          <div class="user-info"><span class="user-name">Sadid Acosta</span><span class="user-role">Administrador</span>
+          </div>
+        </div>
+        <ul class="sidebar-menu">
+          <li data-navigate="screen-dashboard"><i class="fas fa-th-large"></i><span>Dashboard</span></li>
+          <li class="active" data-navigate="screen-products"><i class="fas fa-box-open"></i><span>Productos</span></li>
+          <li data-navigate="screen-lots"><i class="fas fa-layer-group"></i><span>Lotes</span></li>
+          <li data-navigate="screen-alerts"><i class="fas fa-bell"></i><span>Alertas</span><span
+              class="badge badge-danger">0</span></li>
+          <li data-navigate="screen-suppliers"><i class="fas fa-truck"></i><span>Proveedores</span></li>
+          <li data-navigate="screen-users"><i class="fas fa-users-cog"></i><span>Usuarios</span></li>
+          <li data-navigate="screen-reports"><i class="fas fa-chart-bar"></i><span>Reportes</span></li>
+        </ul>
+      </nav>
+      <main class="main-content">
+        <header class="top-bar">
+          <div class="top-bar-left">
+            <button class="btn-ghost" data-navigate="screen-products"><i class="fas fa-arrow-left"></i> Volver</button>
+            <div class="page-title">
+              <h1>Detalle de Producto</h1>
+              <p class="breadcrumb" id="detail-breadcrumb">Productos / Cargando...</p>
+            </div>
+          </div>
+          <div class="top-bar-right">
+            <button class="icon-btn theme-toggle-btn" data-action="toggle-theme"><i class="fas fa-moon"></i><i
+                class="fas fa-sun"></i></button>
+            <button class="btn-outline"><i class="fas fa-edit"></i> Editar</button>
+            <button class="btn-danger-outline"><i class="fas fa-trash"></i> Eliminar</button>
+          </div>
+        </header>
+        <div class="content-area">
+          <div class="detail-grid">
+            <div class="detail-main">
+              <div class="detail-card">
+                <div class="detail-header-visual" id="detail-icon-bg"
+                  style="background: linear-gradient(135deg, #dbeafe, #bfdbfe);">
+                  <i class="fas fa-box" id="detail-icon" style="font-size:4rem;color:#3b82f6;"></i>
+                </div>
+                <div class="detail-info">
+                  <span class="pc-category" id="detail-category">Categoría</span>
+                  <h2 id="detail-name">Nombre Producto</h2>
+                  <p class="detail-desc" id="detail-desc">Descripción del producto...</p>
+                  <div class="detail-meta">
+                    <div class="dm-item"><i class="fas fa-barcode"></i><span id="detail-sku">SKU: ---</span></div>
+                    <div class="dm-item"><i class="fas fa-weight-hanging"></i><span id="detail-unit">Unidad: ---</span>
+                    </div>
+                    <div class="dm-item"><i class="fas fa-warehouse"></i><span id="detail-min-stock">Stock Mínimo:
+                        ---</span></div>
+                    <div class="dm-item"><i class="fas fa-tag"></i><span id="detail-price">Precio: $---</span></div>
+                  </div>
+                </div>
+              </div>
+              <!-- Lots Table (PEPS) -->
+              <div class="chart-card">
+                <div class="card-header">
+                  <h3>📦 Lotes Activos (PEPS)</h3>
+                  <button class="btn-primary btn-sm" data-navigate="screen-lot-register"><i class="fas fa-plus"></i>
+                    Nuevo Lote</button>
+                </div>
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th>Lote</th>
+                      <th>Entrada</th>
+                      <th>Caducidad</th>
+                      <th>Cantidad</th>
+                      <th>Estado</th>
+                      <th>Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody id="detail-lots-table">
+                    <!-- Se llena dinámicamente -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            <div class="detail-sidebar">
+              <div class="chart-card">
+                <h3>📊 Resumen de Stock</h3>
+                <div class="stock-summary">
+                  <div class="ss-item"><span class="ss-label">Stock Total</span><span class="ss-value"
+                      id="detail-total-stock">0 unid.</span></div>
+                  <div class="ss-item"><span class="ss-label">Stock Mínimo</span><span class="ss-value"
+                      id="detail-min-stock-val">0 unid.</span></div>
+                  <div class="ss-item"><span class="ss-label">Lotes Activos</span><span class="ss-value"
+                      id="detail-active-lots">0</span></div>
+                  <div class="ss-item"><span class="ss-label">Próximo Vencimiento</span><span
+                      class="ss-value text-danger" id="detail-next-expiry">---</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <!-- ==================== LOT REGISTER (Barcode Scan) ==================== -->
+  <div id="screen-lot-register" class="screen">
+    <div class="app-layout">
+      <nav class="sidebar">
+        <div class="sidebar-header">
+          <div class="logo-small"><i class="fas fa-seedling"></i> <span>FreshStock</span></div>
+          <button class="sidebar-toggle" data-action="toggle-sidebar"><i class="fas fa-bars"></i></button>
+        </div>
+        <div class="sidebar-user">
+          <div class="user-avatar">SA</div>
+          <div class="user-info"><span class="user-name">Sadid Acosta</span><span class="user-role">Administrador</span>
+          </div>
+        </div>
+        <ul class="sidebar-menu">
+          <li data-navigate="screen-dashboard"><i class="fas fa-th-large"></i><span>Dashboard</span></li>
+          <li data-navigate="screen-products"><i class="fas fa-box-open"></i><span>Productos</span></li>
+          <li class="active" data-navigate="screen-lots"><i class="fas fa-layer-group"></i><span>Lotes</span></li>
+          <li data-navigate="screen-alerts"><i class="fas fa-bell"></i><span>Alertas</span><span
+              class="badge badge-danger">0</span></li>
+          <li data-navigate="screen-suppliers"><i class="fas fa-truck"></i><span>Proveedores</span></li>
+          <li data-navigate="screen-users"><i class="fas fa-users-cog"></i><span>Usuarios</span></li>
+          <li data-navigate="screen-reports"><i class="fas fa-chart-bar"></i><span>Reportes</span></li>
+        </ul>
+      </nav>
+      <main class="main-content">
+        <header class="top-bar">
+          <div class="top-bar-left">
+            <button class="btn-ghost" data-navigate="screen-lots"><i class="fas fa-arrow-left"></i> Volver</button>
+            <div class="page-title">
+              <h1>Registrar Nuevo Lote</h1>
+              <p class="breadcrumb">Lotes / Nuevo Registro</p>
+            </div>
+          </div>
+        </header>
+        <div class="content-area">
+          <div class="register-grid">
+            <div class="register-main">
+              <!-- Lot Form -->
+              <div class="chart-card">
+                <div class="card-header">
+                  <h3>📝 Información del Lote</h3>
+                </div>
+                <form class="lot-form" id="lot-form">
+                  <div class="form-row">
+                    <div class="form-group">
+                      <label>Producto *</label>
+                      <select class="form-select" name="product_sku" id="lot-product-select" required>
+                        <option value="">Seleccionar producto...</option>
+                      </select>
+                    </div>
+                    <div class="form-group">
+                      <label>Número de Lote *</label>
+                      <div class="input-icon"><i class="fas fa-hashtag"></i><input type="text" name="batch_code"
+                          placeholder="Auto-generado" readonly></div>
+                    </div>
+                  </div>
+                  <div class="form-row">
+                    <div class="form-group">
+                      <label>Fecha de Entrada *</label>
+                      <div class="input-icon"><i class="fas fa-calendar"></i><input type="date" name="entry_date"
+                          required></div>
+                    </div>
+                    <div class="form-group">
+                      <label>Fecha de Caducidad *</label>
+                      <div class="input-icon"><i class="fas fa-calendar-times"></i><input type="date" name="expiry_date"
+                          required></div>
+                    </div>
+                  </div>
+                  <div class="form-row">
+                    <div class="form-group">
+                      <label>Cantidad *</label>
+                      <div class="input-icon"><i class="fas fa-cubes"></i><input type="number" name="initial_quantity"
+                          placeholder="0" required></div>
+                    </div>
+                    <div class="form-group">
+                      <label>Costo Unitario ($)</label>
+                      <div class="input-icon"><i class="fas fa-dollar-sign"></i><input type="number" name="unit_cost"
+                          placeholder="0" step="0.01"></div>
+                    </div>
+                  </div>
+                  <div class="form-row">
+                    <div class="form-group">
+                      <label>Proveedor</label>
+                      <select class="form-select" name="supplier_id" id="lot-supplier-select">
+                        <option value="">Seleccionar proveedor...</option>
+                      </select>
+                    </div>
+                    <div class="form-group">
+                      <label>Ubicación en Almacén</label>
+                      <div class="input-icon"><i class="fas fa-map-marker-alt"></i><input type="text"
+                          name="warehouse_location" placeholder="Ej: Estante A-3"></div>
+                    </div>
+                  </div>
+                  <div class="form-group">
+                    <label>Notas</label>
+                    <textarea name="notes" placeholder="Observaciones adicionales..." rows="3"></textarea>
+                  </div>
+                  <div class="form-actions">
+                    <button type="button" class="btn-outline" data-navigate="screen-lots">Cancelar</button>
+                    <button type="submit" class="btn-primary"><i class="fas fa-save"></i> Registrar Lote</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+            <div class="register-sidebar">
+              <div class="chart-card">
+                <h3>ℹ️ Información PEPS</h3>
+                <div class="tips-list">
+                  <div class="tip"><i class="fas fa-lightbulb"></i> El sistema PEPS (FIFO) prioriza los lotes más
+                    antiguos automáticamente.</div>
+                  <div class="tip"><i class="fas fa-lightbulb"></i> Verifica la fecha de caducidad antes de registrar.
+                  </div>
+                  <div class="tip"><i class="fas fa-lightbulb"></i> Los lotes vencidos se marcan automáticamente.</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <!-- ==================== LOTS MANAGEMENT (PEPS) ==================== -->
+  <div id="screen-lots" class="screen">
+    <div class="app-layout">
+      <nav class="sidebar">
+        <div class="sidebar-header">
+          <div class="logo-small"><i class="fas fa-seedling"></i> <span>FreshStock</span></div>
+          <button class="sidebar-toggle" data-action="toggle-sidebar"><i class="fas fa-bars"></i></button>
+        </div>
+        <div class="sidebar-user">
+          <div class="user-avatar">SA</div>
+          <div class="user-info"><span class="user-name">Sadid Acosta</span><span class="user-role">Administrador</span>
+          </div>
+        </div>
+        <ul class="sidebar-menu">
+          <li data-navigate="screen-dashboard"><i class="fas fa-th-large"></i><span>Dashboard</span></li>
+          <li data-navigate="screen-products"><i class="fas fa-box-open"></i><span>Productos</span></li>
+          <li class="active" data-navigate="screen-lots"><i class="fas fa-layer-group"></i><span>Lotes</span></li>
+          <li data-navigate="screen-alerts"><i class="fas fa-bell"></i><span>Alertas</span><span
+              class="badge badge-danger">0</span></li>
+          <li data-navigate="screen-suppliers"><i class="fas fa-truck"></i><span>Proveedores</span></li>
+          <li data-navigate="screen-users"><i class="fas fa-users-cog"></i><span>Usuarios</span></li>
+          <li data-navigate="screen-reports"><i class="fas fa-chart-bar"></i><span>Reportes</span></li>
+        </ul>
+      </nav>
+      <main class="main-content">
+        <header class="top-bar">
+          <div class="top-bar-left">
+            <div class="page-title">
+              <h1>Gestión de Lotes</h1>
+              <p class="breadcrumb">Inicio / Lotes / Vista PEPS</p>
+            </div>
+          </div>
+          <div class="top-bar-right">
+            <button class="icon-btn theme-toggle-btn" data-action="toggle-theme"><i class="fas fa-moon"></i><i
+                class="fas fa-sun"></i></button>
+            <div class="search-bar"><i class="fas fa-search"></i><input type="text" placeholder="Buscar lotes..."></div>
+            <button class="btn-primary" data-navigate="screen-lot-register"><i class="fas fa-plus"></i> Nuevo
+              Lote</button>
+          </div>
+        </header>
+        <div class="content-area">
+          <div class="peps-info-banner">
+            <div class="peps-icon"><i class="fas fa-info-circle"></i></div>
+            <div class="peps-text">
+              <strong>Método PEPS Activo:</strong> Los lotes se ordenan por fecha de entrada. El sistema prioriza la
+              salida de los lotes más antiguos primero.
+            </div>
+          </div>
+          <div class="filters-bar">
+            <div class="filters-left">
+              <button class="chip active" data-filter="all">Todos</button>
+              <button class="chip" data-filter="active">Vigentes</button>
+              <button class="chip chip-warning" data-filter="expiring">Por Vencer</button>
+              <button class="chip chip-danger" data-filter="expired">Vencidos</button>
+            </div>
+            <div class="filters-right">
+              <button class="btn-outline"><i class="fas fa-filter"></i> Filtros</button>
+              <button class="btn-outline"><i class="fas fa-download"></i> Exportar</button>
+            </div>
+          </div>
+          <div class="chart-card">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Lote</th>
+                  <th>Producto</th>
+                  <th>Entrada</th>
+                  <th>Caducidad</th>
+                  <th>Cantidad</th>
+                  <th>Ubicación</th>
+                  <th>Estado</th>
+                  <th>Prioridad PEPS</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody id="lots-table-body">
+                <!-- Se llena dinámicamente -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <!-- ==================== ALERTS CENTER ==================== -->
+  <div id="screen-alerts" class="screen">
+    <div class="app-layout">
+      <nav class="sidebar">
+        <div class="sidebar-header">
+          <div class="logo-small"><i class="fas fa-seedling"></i> <span>FreshStock</span></div>
+          <button class="sidebar-toggle" data-action="toggle-sidebar"><i class="fas fa-bars"></i></button>
+        </div>
+        <div class="sidebar-user">
+          <div class="user-avatar">SA</div>
+          <div class="user-info"><span class="user-name">Sadid Acosta</span><span class="user-role">Administrador</span>
+          </div>
+        </div>
+        <ul class="sidebar-menu">
+          <li data-navigate="screen-dashboard"><i class="fas fa-th-large"></i><span>Dashboard</span></li>
+          <li data-navigate="screen-products"><i class="fas fa-box-open"></i><span>Productos</span></li>
+          <li data-navigate="screen-lots"><i class="fas fa-layer-group"></i><span>Lotes</span></li>
+          <li class="active" data-navigate="screen-alerts"><i class="fas fa-bell"></i><span>Alertas</span><span
+              class="badge badge-danger" id="nav-badge-alerts3">0</span></li>
+          <li data-navigate="screen-suppliers"><i class="fas fa-truck"></i><span>Proveedores</span></li>
+          <li data-navigate="screen-users"><i class="fas fa-users-cog"></i><span>Usuarios</span></li>
+          <li data-navigate="screen-reports"><i class="fas fa-chart-bar"></i><span>Reportes</span></li>
+        </ul>
+      </nav>
+      <main class="main-content">
+        <header class="top-bar">
+          <div class="top-bar-left">
+            <div class="page-title">
+              <h1>Centro de Alertas</h1>
+              <p class="breadcrumb">Inicio / Alertas</p>
+            </div>
+          </div>
+          <div class="top-bar-right">
+            <button class="icon-btn theme-toggle-btn" data-action="toggle-theme"><i class="fas fa-moon"></i><i
+                class="fas fa-sun"></i></button>
+            <button class="btn-outline"><i class="fas fa-check-double"></i> Marcar todas como leídas</button>
+          </div>
+        </header>
+        <div class="content-area">
+          <div class="alert-summary-cards">
+            <div class="alert-sum-card asc-red">
+              <i class="fas fa-skull-crossbones"></i>
+              <div><span class="asc-val" id="alert-expired">0</span><span class="asc-lbl">Vencidos</span></div>
+            </div>
+            <div class="alert-sum-card asc-orange">
+              <i class="fas fa-exclamation-triangle"></i>
+              <div><span class="asc-val" id="alert-today">0</span><span class="asc-lbl">Vencen Hoy</span></div>
+            </div>
+            <div class="alert-sum-card asc-yellow">
+              <i class="fas fa-clock"></i>
+              <div><span class="asc-val" id="alert-week">0</span><span class="asc-lbl">Próximos 7 días</span></div>
+            </div>
+            <div class="alert-sum-card asc-blue">
+              <i class="fas fa-arrow-down"></i>
+              <div><span class="asc-val" id="alert-stock">0</span><span class="asc-lbl">Stock Bajo</span></div>
+            </div>
+          </div>
+          <div class="alerts-list" id="alerts-container">
+            <!-- Se llena dinámicamente -->
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <!-- ==================== SUPPLIERS ==================== -->
+  <div id="screen-suppliers" class="screen">
+    <div class="app-layout">
+      <nav class="sidebar">
+        <div class="sidebar-header">
+          <div class="logo-small"><i class="fas fa-seedling"></i> <span>FreshStock</span></div>
+          <button class="sidebar-toggle" data-action="toggle-sidebar"><i class="fas fa-bars"></i></button>
+        </div>
+        <div class="sidebar-user">
+          <div class="user-avatar">SA</div>
+          <div class="user-info"><span class="user-name">Sadid Acosta</span><span class="user-role">Administrador</span>
+          </div>
+        </div>
+        <ul class="sidebar-menu">
+          <li data-navigate="screen-dashboard"><i class="fas fa-th-large"></i><span>Dashboard</span></li>
+          <li data-navigate="screen-products"><i class="fas fa-box-open"></i><span>Productos</span></li>
+          <li data-navigate="screen-lots"><i class="fas fa-layer-group"></i><span>Lotes</span></li>
+          <li data-navigate="screen-alerts"><i class="fas fa-bell"></i><span>Alertas</span><span
+              class="badge badge-danger">0</span></li>
+          <li class="active" data-navigate="screen-suppliers"><i class="fas fa-truck"></i><span>Proveedores</span></li>
+          <li data-navigate="screen-users"><i class="fas fa-users-cog"></i><span>Usuarios</span></li>
+          <li data-navigate="screen-reports"><i class="fas fa-chart-bar"></i><span>Reportes</span></li>
+        </ul>
+      </nav>
+      <main class="main-content">
+        <header class="top-bar">
+          <div class="top-bar-left">
+            <div class="page-title">
+              <h1>Gestión de Proveedores</h1>
+              <p class="breadcrumb">Inicio / Proveedores</p>
+            </div>
+          </div>
+          <div class="top-bar-right">
+            <button class="icon-btn theme-toggle-btn" data-action="toggle-theme"><i class="fas fa-moon"></i><i
+                class="fas fa-sun"></i></button>
+            <button class="btn-primary"><i class="fas fa-plus"></i> Nuevo Proveedor</button>
+          </div>
+        </header>
+        <div class="content-area">
+          <div class="supplier-grid" id="suppliers-grid">
+            <!-- Se llena dinámicamente -->
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <!-- ==================== SLIDE-OVER PANEL NEW PRODUCT ==================== -->
+  <div class="slide-backdrop" id="new-product-backdrop" data-action="close-new-product"></div>
+  <div class="slide-panel" id="new-product-panel">
+    <div class="slide-panel-header">
+      <h2><i class="fas fa-box-open"></i> Nuevo Producto</h2>
+      <button class="icon-btn-sm" data-action="close-new-product"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="slide-panel-body">
+      <form id="new-product-form" class="standard-form">
+        <div class="form-group slide-stagger">
+          <label>SKU *</label>
+          <div class="input-icon">
+            <i class="fas fa-barcode"></i>
+            <input type="text" name="sku" placeholder="Ej. LAC-001" required>
+          </div>
+        </div>
+
+        <div class="form-group slide-stagger">
+          <label>Nombre del Producto *</label>
+          <div class="input-icon">
+            <i class="fas fa-tag"></i>
+            <input type="text" name="name" placeholder="Ej. Queso Mozzarella" required>
+          </div>
+        </div>
+
+        <div class="form-row slide-stagger">
+          <div class="form-group">
+            <label>Categoría</label>
+            <select name="category_id" class="form-select" id="new-product-category">
+              <option value="">Seleccionar...</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Unidad de Medida</label>
+            <select name="unit_id" class="form-select">
+              <option value="1">Kilogramos (kg)</option>
+              <option value="2">Gramos (g)</option>
+              <option value="3">Litros (L)</option>
+              <option value="4">Mililitros (mL)</option>
+              <option value="5" selected>Unidades (un)</option>
+              <option value="6">Docenas (dz)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-row slide-stagger">
+          <div class="form-group">
+            <label>Precio de Venta * ($)</label>
+            <div class="input-icon">
+              <i class="fas fa-dollar-sign"></i>
+              <input type="number" name="sale_price" placeholder="0.00" step="0.01" required>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Stock Mínimo</label>
+            <div class="input-icon">
+              <i class="fas fa-arrow-down"></i>
+              <input type="number" name="min_stock" placeholder="20" value="20">
+            </div>
+          </div>
+        </div>
+
+        <div class="form-group slide-stagger">
+          <label>Código de Barras</label>
+          <div class="input-icon">
+            <i class="fas fa-barcode"></i>
+            <input type="text" name="barcode" placeholder="Opcional">
+          </div>
+        </div>
+
+        <div class="form-group slide-stagger">
+          <label>Descripción</label>
+          <textarea name="description" class="form-textarea" placeholder="Descripción detallada del producto..."
+            rows="3"></textarea>
+        </div>
+
+        <div class="form-group slide-stagger">
+          <label class="checkbox-custom">
+            <input type="checkbox" name="requires_refrigeration">
+            <span class="checkmark"></span>
+            Requiere Refrigeración
+          </label>
+        </div>
+      </form>
+    </div>
+    <div class="slide-panel-footer">
+      <button type="button" class="btn-outline" data-action="close-new-product">Cancelar</button>
+      <button type="submit" form="new-product-form" class="btn-primary">Guardar Producto</button>
+    </div>
+  </div>
+
+  <div class="toast-container" id="toast-container"></div>
+
+  <div class="loading-overlay" id="loading-overlay">
+    <div class="spinner">
+      <div class="bounce1"></div>
+      <div class="bounce2"></div>
+      <div class="bounce3"></div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/Flip.min.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/app.js"></script>
 </body>
 
 </html>
