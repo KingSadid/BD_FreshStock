@@ -28,7 +28,6 @@ api.use("/api/movements", movementRoutes);
 api.use("/api/dashboard", dashboardRoutes);
 api.use("/api/users", userRoutes);
 
-// Error handling middleware
 api.use((err, req, res, next) => {
   console.error(err.stack);
   res.status(500).json({ error: 'Error interno del servidor' });
