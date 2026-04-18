@@ -1,7 +1,6 @@
 const express = require("express");
 const path = require("path");
 
-// Routes
 const testRoutes = require("./routes/test.routes");
 const productRoutes = require("./routes/products.routes");
 const batchRoutes = require("./routes/batches.routes");
@@ -16,12 +15,10 @@ const cors = require("cors");
 const PORT = 5000;
 const api = express();
 
-// Middleware
 api.use(cors());
 api.use(express.json());
 api.use(express.static("public"));
 
-// API Routes
 api.use("/api/test", testRoutes);
 api.use("/api/products", productRoutes);
 api.use("/api/batches", batchRoutes);
