@@ -1,7 +1,7 @@
 const config = {
     host: 'localhost',
     user: 'root',
-    password: 'password',
+    password: 'root*',
     database: 'freshstock',
     port: 3306,
     waitForConnections: true,
