@@ -1,58 +1,42 @@
-const API_BASE_URL = '';
-const JSON_HEADERS = { 'Content-Type': 'application/json' };
+const API_BASE = '';
 
-function executeApiRequest(endpoint, requestOptions = {}) {
-    return fetch(`${API_BASE_URL}${endpoint}`, requestOptions)
-        .then(response => {
-            if (!response.ok) {
-                const method = requestOptions.method || 'GET';
-                throw new Error(`Request failed: ${response.status} ${response.statusText} [${method} ${endpoint}]`);
-            }
-            return response;
-        })
-        .catch(error => {
-            const method = requestOptions.method || 'GET';
-            console.error(`API Error at ${method} ${endpoint}:`, error);
-            throw error;
-        });
-}
+const api = {
+  // Dashboard
+  getKPIs: () => fetch(`${API_BASE}/api/dashboard/kpis`).then(r => r.json()),
+  getMovementStats: () => fetch(`${API_BASE}/api/dashboard/movement-stats`).then(r => r.json()),
+  getCategoryStats: () => fetch(`${API_BASE}/api/dashboard/category-stats`).then(r => r.json()),
 
-function fetchJsonData(endpoint) {
-    return executeApiRequest(endpoint).then(response => response.json());
-}
+  getProducts: () => fetch(`${API_BASE}/api/products`).then(r => r.json()),
+  getProduct: (sku) => fetch(`${API_BASE}/api/products/${sku}`).then(r => r.json()),
+  createProduct: (data) => fetch(`${API_BASE}/api/products`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
+  }),
+  updateProduct: (sku, data) => fetch(`${API_BASE}/api/products/${sku}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
+  }),
+  deleteProduct: (sku) => fetch(`${API_BASE}/api/products/${sku}`, {
+    method: 'DELETE'
+  }),
 
-function sendJsonData(endpoint, method, payload) {
-    return executeApiRequest(endpoint, {
-        method,
-        headers: JSON_HEADERS,
-        body: JSON.stringify(payload)
-    });
-}
+  getBatches: (status = '') => fetch(`${API_BASE}/api/batches${status ? '?status=' + status : ''}`).then(r => r.json()),
+  getExpiringBatches: (days = 7) => fetch(`${API_BASE}/api/batches/expiring?days=${days}`).then(r => r.json()),
+  createBatch: (data) => fetch(`${API_BASE}/api/batches`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
+  }),
 
-function removeResource(endpoint) {
-    return executeApiRequest(endpoint, { method: 'DELETE' });
-}
+  deleteBatch: (id) => fetch(`${API_BASE}/api/batches/${id}`, {
+    method: 'DELETE'
+  }),
 
-const apiClient = {
-    getDashboardKPIs: () => fetchJsonData('/api/dashboard/kpis'),
-    getDashboardMovementStats: () => fetchJsonData('/api/dashboard/movement-stats'),
-    getDashboardCategoryStats: () => fetchJsonData('/api/dashboard/category-stats'),
+  getSuppliers: () => fetch(`${API_BASE}/api/suppliers`).then(r => r.json()),
 
-    getProducts: () => fetchJsonData('/api/products'),
-    getProductBySku: (sku) => fetchJsonData(`/api/products/${sku}`),
-    createProduct: (productData) => sendJsonData('/api/products', 'POST', productData),
-    updateProduct: (sku, productData) => sendJsonData(`/api/products/${sku}`, 'PUT', productData),
-    deleteProduct: (sku) => removeResource(`/api/products/${sku}`),
+  getCategories: () => fetch(`${API_BASE}/api/categories`).then(r => r.json()),
 
-    getBatches: (statusFilter = '') => {
-        const queryString = statusFilter ? `?status=${statusFilter}` : '';
-        return fetchJsonData(`/api/batches${queryString}`);
-    },
-    getExpiringBatches: (daysAhead = 7) => fetchJsonData(`/api/batches/expiring?days=${daysAhead}`),
-    createBatch: (batchData) => sendJsonData('/api/batches', 'POST', batchData),
-    deleteBatch: (batchId) => removeResource(`/api/batches/${batchId}`),
-
-    getSuppliers: () => fetchJsonData('/api/suppliers'),
-    getCategories: () => fetchJsonData('/api/categories'),
-    getRecentMovements: () => fetchJsonData('/api/movements/recent')
+  getRecentMovements: () => fetch(`${API_BASE}/api/movements/recent`).then(r => r.json())
 };
