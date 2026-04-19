@@ -20,7 +20,6 @@
 
 <body>
 
-  <!-- ==================== LOGIN SCREEN ==================== -->
   <div id="screen-login" class="screen active">
     <button class="icon-btn theme-toggle-btn login-theme-btn" data-action="toggle-theme">
       <i class="fas fa-moon"></i><i class="fas fa-sun"></i>
@@ -88,7 +87,6 @@
     </div>
   </div>
 
-  <!-- ==================== DASHBOARD ==================== -->
   <div id="screen-dashboard" class="screen">
     <div class="app-layout">
       <nav class="sidebar" id="sidebar">
@@ -146,10 +144,9 @@
           </div>
         </header>
         <div class="content-area">
-          <!-- Welcome Banner -->
           <div class="welcome-banner">
             <div class="wb-text">
-              <h2>¡Buenos días, Sadid! 👋</h2>
+              <h2>¡Buenos días, Sadid!</h2>
               <p>Tienes <strong id="banner-alerts">0 alertas</strong> pendientes y <strong id="banner-expiring">0
                   productos</strong> próximos a vencer hoy.</p>
               <button class="btn-primary btn-sm" data-navigate="screen-alerts">Ver Alertas <i
@@ -159,7 +156,6 @@
               <i class="fas fa-chart-pie"></i>
             </div>
           </div>
-          <!-- KPI Cards -->
           <div class="kpi-grid">
             <div class="kpi-card kpi-blue">
               <div class="kpi-icon"><i class="fas fa-box-open"></i></div>
@@ -194,7 +190,6 @@
               <div class="kpi-trend down"><i class="fas fa-arrow-up"></i> 2</div>
             </div>
           </div>
-          <!-- Charts Row -->
           <div class="charts-row">
             <div class="chart-card wide">
               <div class="card-header">
@@ -264,29 +259,27 @@
                   <text x="100" y="115" text-anchor="middle" fill="var(--text-muted)" font-size="12">productos</text>
                 </svg>
                 <div class="donut-legend" id="categories-legend">
-                  <!-- Se llena dinámicamente -->
                 </div>
               </div>
             </div>
           </div>
-          <!-- Recent Activity & Expiring -->
           <div class="charts-row">
             <div class="chart-card">
               <div class="card-header">
-                <h3>⚠️ Próximos a Vencer</h3>
+                <h3><i class="fas fa-exclamation-triangle" style="color: #f59e0b; margin-right: 8px;"></i> Próximos a
+                  Vencer</h3>
                 <a href="#" data-navigate="screen-alerts">Ver todos</a>
               </div>
               <div class="expiry-list" id="dashboard-expiry-list">
-                <!-- Se llena dinámicamente -->
               </div>
             </div>
             <div class="chart-card">
               <div class="card-header">
-                <h3>📋 Actividad Reciente</h3>
+                <h3><i class="fas fa-clipboard-list" style="color: #3b82f6; margin-right: 8px;"></i> Actividad Reciente
+                </h3>
                 <a href="#" data-navigate="screen-reports">Ver historial</a>
               </div>
               <div class="activity-list" id="dashboard-activity-list">
-                <!-- Se llena dinámicamente -->
               </div>
             </div>
           </div>
@@ -295,7 +288,6 @@
     </div>
   </div>
 
-  <!-- ==================== PRODUCTS CATALOG ==================== -->
   <div id="screen-products" class="screen">
     <div class="app-layout">
       <nav class="sidebar" id="sidebar2">
@@ -342,12 +334,10 @@
           </div>
         </header>
         <div class="content-area">
-          <!-- Filters Bar -->
           <div class="filters-bar">
             <div class="filters-left" id="category-filters">
               <button class="chip active" data-filter="all">Todos <span class="chip-count"
                   id="count-all">0</span></button>
-              <!-- Se llenan dinámicamente -->
             </div>
             <div class="filters-right">
               <button class="btn-outline"><i class="fas fa-filter"></i> Filtros</button>
@@ -356,9 +346,7 @@
                 Producto</button>
             </div>
           </div>
-          <!-- Product Grid -->
           <div class="product-grid" id="products-grid">
-            <!-- Se llena dinámicamente -->
           </div>
           <div class="pagination">
             <button class="page-btn active">1</button>
@@ -373,7 +361,6 @@
     </div>
   </div>
 
-  <!-- ==================== PRODUCT DETAIL ==================== -->
   <div id="screen-product-detail" class="screen">
     <div class="app-layout">
       <nav class="sidebar">
@@ -435,10 +422,9 @@
                   </div>
                 </div>
               </div>
-              <!-- Lots Table (PEPS) -->
               <div class="chart-card">
                 <div class="card-header">
-                  <h3>📦 Lotes Activos (PEPS)</h3>
+                  <h3><i class="fas fa-boxes" style="color: #6366f1; margin-right: 8px;"></i> Lotes Activos (PEPS)</h3>
                   <button class="btn-primary btn-sm" data-navigate="screen-lot-register"><i class="fas fa-plus"></i>
                     Nuevo Lote</button>
                 </div>
@@ -454,14 +440,13 @@
                     </tr>
                   </thead>
                   <tbody id="detail-lots-table">
-                    <!-- Se llena dinámicamente -->
                   </tbody>
                 </table>
               </div>
             </div>
             <div class="detail-sidebar">
               <div class="chart-card">
-                <h3>📊 Resumen de Stock</h3>
+                <h3><i class="fas fa-chart-pie" style="color: #10b981; margin-right: 8px;"></i> Resumen de Stock</h3>
                 <div class="stock-summary">
                   <div class="ss-item"><span class="ss-label">Stock Total</span><span class="ss-value"
                       id="detail-total-stock">0 unid.</span></div>
@@ -480,7 +465,6 @@
     </div>
   </div>
 
-  <!-- ==================== LOT REGISTER (Barcode Scan) ==================== -->
   <div id="screen-lot-register" class="screen">
     <div class="app-layout">
       <nav class="sidebar">
@@ -517,10 +501,10 @@
         <div class="content-area">
           <div class="register-grid">
             <div class="register-main">
-              <!-- Lot Form -->
               <div class="chart-card">
                 <div class="card-header">
-                  <h3>📝 Información del Lote</h3>
+                  <h3><i class="fas fa-file-signature" style="color: #6366f1; margin-right: 8px;"></i> Información del
+                    Lote</h3>
                 </div>
                 <form class="lot-form" id="lot-form">
                   <div class="form-row">
@@ -586,7 +570,7 @@
             </div>
             <div class="register-sidebar">
               <div class="chart-card">
-                <h3>ℹ️ Información PEPS</h3>
+                <h3><i class="fas fa-info-circle" style="color: #3b82f6; margin-right: 8px;"></i> Información PEPS</h3>
                 <div class="tips-list">
                   <div class="tip"><i class="fas fa-lightbulb"></i> El sistema PEPS (FIFO) prioriza los lotes más
                     antiguos automáticamente.</div>
@@ -602,7 +586,6 @@
     </div>
   </div>
 
-  <!-- ==================== LOTS MANAGEMENT (PEPS) ==================== -->
   <div id="screen-lots" class="screen">
     <div class="app-layout">
       <nav class="sidebar">
@@ -678,7 +661,6 @@
                 </tr>
               </thead>
               <tbody id="lots-table-body">
-                <!-- Se llena dinámicamente -->
               </tbody>
             </table>
           </div>
@@ -687,7 +669,6 @@
     </div>
   </div>
 
-  <!-- ==================== ALERTS CENTER ==================== -->
   <div id="screen-alerts" class="screen">
     <div class="app-layout">
       <nav class="sidebar">
@@ -745,14 +726,12 @@
             </div>
           </div>
           <div class="alerts-list" id="alerts-container">
-            <!-- Se llena dinámicamente -->
           </div>
         </div>
       </main>
     </div>
   </div>
 
-  <!-- ==================== SUPPLIERS ==================== -->
   <div id="screen-suppliers" class="screen">
     <div class="app-layout">
       <nav class="sidebar">
@@ -792,14 +771,12 @@
         </header>
         <div class="content-area">
           <div class="supplier-grid" id="suppliers-grid">
-            <!-- Se llena dinámicamente -->
           </div>
         </div>
       </main>
     </div>
   </div>
 
-  <!-- ==================== SLIDE-OVER PANEL NEW PRODUCT ==================== -->
   <div class="slide-backdrop" id="new-product-backdrop" data-action="close-new-product"></div>
   <div class="slide-panel" id="new-product-panel">
     <div class="slide-panel-header">

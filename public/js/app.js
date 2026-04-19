@@ -1,640 +1,732 @@
-// Cargar datos del dashboard
 async function loadDashboard() {
-  try {
-    // KPIs
-    const kpis = await api.getKPIs();
-    document.getElementById('kpi-products').textContent = kpis.active_products;
-    document.getElementById('kpi-batches').textContent = kpis.total_batches;
-    document.getElementById('kpi-expiring').textContent = kpis.expiring_soon;
-    document.getElementById('kpi-critical').textContent = kpis.critical_stock;
+    try {
+        const dashboardMetrics = await api.getKPIs();
+        updateDashboardCounters(dashboardMetrics);
+        updateDashboardNotificationBadges(dashboardMetrics);
 
-    // Actualizar badges
-    document.querySelectorAll('[id^="nav-badge-products"]').forEach(b => b.textContent = kpis.active_products);
-    document.querySelectorAll('[id^="nav-badge-alerts"]').forEach(b => b.textContent = kpis.expiring_soon);
-    document.getElementById('banner-alerts').textContent = kpis.expiring_soon + ' alertas';
-    document.getElementById('banner-expiring').textContent = kpis.expiring_soon + ' productos';
-    document.getElementById('login-stat-products').textContent = kpis.active_products + ' productos';
-    document.getElementById('login-stat-alerts').textContent = kpis.expiring_soon + ' alertas';
+        const expiringBatchesList = await api.getExpiringBatches(7);
+        renderExpiringBatchesList(expiringBatchesList);
 
-    // Próximos a vencer
-    const expiring = await api.getExpiringBatches(7);
-    const expiryList = document.getElementById('dashboard-expiry-list');
-    expiryList.innerHTML = expiring.map(batch => {
-      const days = getDaysRemaining(batch.expiry_date);
-      const statusClass = days <= 0 ? 'critical' : days <= 2 ? 'warning' : 'caution';
-      const daysText = days <= 0 ? 'Hoy' : days + ' días';
+        const recentActivityMovements = await api.getRecentMovements();
+        renderRecentActivityList(recentActivityMovements);
 
-      return `
-        <div class="expiry-item ${statusClass}">
-          <div class="expiry-icon"><i class="fas fa-box"></i></div>
-          <div class="expiry-info">
-            <span class="expiry-name">${batch.product_name}</span>
-            <span class="expiry-lot">Lote #${batch.batch_code}</span>
-          </div>
-          <div class="expiry-date">
-            <span class="expiry-badge ${statusClass}">${daysText}</span>
-          </div>
-        </div>
-      `;
-    }).join('');
+        const [movementStatisticsData, categoryStatisticsData] = await Promise.all([
+            api.getMovementStats(),
+            api.getCategoryStats()
+        ]);
 
-    // Actividad reciente
-    const movements = await api.getRecentMovements();
-    const activityList = document.getElementById('dashboard-activity-list');
-    activityList.innerHTML = movements.slice(0, 5).map(mov => {
-      const colors = { purchase: 'green', sale: 'blue', waste: 'red', adjustment: 'orange' };
-      return `
-        <div class="activity-item">
-          <div class="activity-dot ${colors[mov.movement_type] || 'blue'}"></div>
-          <div class="activity-info">
-            <span class="activity-text"><strong>${mov.user_name}</strong> ${mov.movement_type} de <strong>${mov.quantity} unid.</strong> ${mov.product_name}</span>
-            <span class="activity-time">${formatDate(mov.datetime)}</span>
-          </div>
-        </div>
-      `;
-    }).join('');
+        renderMovementChart(movementStatisticsData);
+        renderCategoryChart(categoryStatisticsData);
 
-    // Cargar estadísticas para gráficos
-    const [movementStats, categoryStats] = await Promise.all([
-      api.getMovementStats(),
-      api.getCategoryStats()
-    ]);
-
-    renderMovementChart(movementStats);
-    renderCategoryChart(categoryStats);
-
-    // Animar números
-    animateValue('kpi-products', 0, kpis.active_products, 1000);
-    animateValue('kpi-batches', 0, kpis.total_batches, 1000);
-
-  } catch (error) {
-    console.error('Error cargando dashboard:', error);
-    showToast('Error', 'No se pudieron cargar los datos', 'error');
-  }
+        triggerNumericAnimations(dashboardMetrics);
+    } catch (error) {
+        console.error(error);
+        showToast('Error', 'No se pudieron cargar los datos', 'error');
+    }
 }
 
-function renderMovementChart(data) {
-  const svg = document.querySelector('.line-chart-svg');
-  if (!svg) return;
-
-  const days = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
-  const today = new Date();
-  const last7Days = [];
-  for (let i = 6; i >= 0; i--) {
-      const date = new Date();
-      date.setDate(today.getDate() - i);
-      last7Days.push({
-          dateStr: date.toISOString().split('T')[0],
-          dayName: days[date.getDay()]
-      });
-  }
-
-  // Mapear datos a los últimos 7 días
-  const plotData = last7Days.map(d => {
-      const dayData = data.find(item => item.date.startsWith(d.dateStr)) || { entries: 0, exits: 0 };
-      return { day: d.dayName, entries: dayData.entries, exits: dayData.exits };
-  });
-
-  const maxVal = Math.max(...plotData.map(d => Math.max(d.entries, d.exits)), 10);
-  const width = 600;
-  const height = 200;
-  const padding = 40;
-  const chartWidth = width - padding * 2;
-  const chartHeight = height - padding * 2;
-
-  const getX = (i) => padding + (i * chartWidth) / 6;
-  const getY = (val) => (height - padding) - (val * chartHeight) / maxVal;
-
-  let entryPath = `M ${getX(0)},${getY(plotData[0].entries)}`;
-  let exitPath = `M ${getX(0)},${getY(plotData[0].exits)}`;
-  let entryArea = `M ${getX(0)},${height - padding} L ${getX(0)},${getY(plotData[0].entries)}`;
-  let exitArea = `M ${getX(0)},${height - padding} L ${getX(0)},${getY(plotData[0].exits)}`;
-
-  let entryPoints = '';
-  let exitPoints = '';
-  let labels = '';
-
-  plotData.forEach((d, i) => {
-      const x = getX(i);
-      const yEnt = getY(d.entries);
-      const yExt = getY(d.exits);
-
-      if (i > 0) {
-          entryPath += ` L ${x},${yEnt}`;
-          exitPath += ` L ${x},${yExt}`;
-      }
-      entryArea += ` L ${x},${yEnt}`;
-      exitArea += ` L ${x},${yExt}`;
-      
-      entryPoints += `<circle cx="${x}" cy="${yEnt}" r="4" fill="#10b981" />`;
-      exitPoints += `<circle cx="${x}" cy="${yExt}" r="4" fill="#6366f1" />`;
-      labels += `<text x="${x}" y="${height - 10}" text-anchor="middle" fill="var(--text-muted)" font-size="11">${d.day}</text>`;
-  });
-
-  entryArea += ` L ${getX(6)},${height - padding} Z`;
-  exitArea += ` L ${getX(6)},${height - padding} Z`;
-
-  svg.innerHTML = `
-    <defs>
-      <linearGradient id="grad1" x1="0%" y1="0%" x2="0%" y2="100%">
-        <stop offset="0%" style="stop-color:#10b981;stop-opacity:0.2" />
-        <stop offset="100%" style="stop-color:#10b981;stop-opacity:0" />
-      </linearGradient>
-      <linearGradient id="grad2" x1="0%" y1="0%" x2="0%" y2="100%">
-        <stop offset="0%" style="stop-color:#6366f1;stop-opacity:0.2" />
-        <stop offset="100%" style="stop-color:#6366f1;stop-opacity:0" />
-      </linearGradient>
-    </defs>
-    <path d="${entryArea}" fill="url(#grad1)" />
-    <path d="${entryPath}" fill="none" stroke="#10b981" stroke-width="3" stroke-linecap="round" />
-    <path d="${exitArea}" fill="url(#grad2)" />
-    <path d="${exitPath}" fill="none" stroke="#6366f1" stroke-width="3" stroke-linecap="round" />
-    ${entryPoints}
-    ${exitPoints}
-    ${labels}
-  `;
+function updateDashboardCounters(metricsData) {
+    try {
+        document.getElementById('kpi-products').textContent = metricsData.active_products;
+        document.getElementById('kpi-batches').textContent = metricsData.total_batches;
+        document.getElementById('kpi-expiring').textContent = metricsData.expiring_soon;
+        document.getElementById('kpi-critical').textContent = metricsData.critical_stock;
+    } catch (error) {
+        console.error(error);
+    }
 }
 
-function renderCategoryChart(data) {
-  const total = data.reduce((acc, curr) => acc + curr.product_count, 0);
-  document.getElementById('donut-total').textContent = total;
+function updateDashboardNotificationBadges(metricsData) {
+    try {
+        document.querySelectorAll('[id^="nav-badge-products"]').forEach(badgeElement => badgeElement.textContent = metricsData.active_products);
+        document.querySelectorAll('[id^="nav-badge-alerts"]').forEach(badgeElement => badgeElement.textContent = metricsData.expiring_soon);
 
-  const colors = ['#10b981', '#6366f1', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
-  const legend = document.getElementById('categories-legend');
-  const svg = document.querySelector('.donut-svg');
-  if (!svg || !legend) return;
-
-  legend.innerHTML = data.map((cat, i) => `
-    <div class="legend-item">
-      <span class="legend-dot" style="background:${colors[i % colors.length]}"></span>
-      <span class="legend-label">${cat.name}</span>
-      <span class="legend-val">${cat.product_count}</span>
-    </div>
-  `).join('');
-
-  // Update SVG segments
-  const radius = 80;
-  const circumference = 2 * Math.PI * radius;
-  let offset = 0;
-
-  // Clear existing segments (except background circle and texts)
-  const segments = svg.querySelectorAll('.donut-seg');
-  segments.forEach(s => s.remove());
-
-  data.forEach((cat, i) => {
-      if (cat.product_count === 0) return;
-      const percent = cat.product_count / total;
-      const strokeDash = percent * circumference;
-      
-      const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-      circle.setAttribute("cx", "100");
-      circle.setAttribute("cy", "100");
-      circle.setAttribute("r", "80");
-      circle.setAttribute("fill", "none");
-      circle.setAttribute("stroke", colors[i % colors.length]);
-      circle.setAttribute("stroke-width", "24");
-      circle.setAttribute("stroke-dasharray", `${strokeDash} ${circumference}`);
-      circle.setAttribute("stroke-dashoffset", -offset);
-      circle.setAttribute("class", "donut-seg");
-      
-      svg.appendChild(circle);
-      offset += strokeDash;
-  });
-  
-  // Re-append text to keep it on top
-  const texts = svg.querySelectorAll('text');
-  texts.forEach(t => svg.appendChild(t));
-
-  // Trigger GSAP animation if available
-  if (window.GSAPIntegration) {
-      window.GSAPIntegration.animateDashboardExt(document.getElementById('screen-dashboard'));
-  }
+        document.getElementById('banner-alerts').textContent = `${metricsData.expiring_soon} alertas`;
+        document.getElementById('banner-expiring').textContent = `${metricsData.expiring_soon} productos`;
+        document.getElementById('login-stat-products').textContent = `${metricsData.active_products} productos`;
+        document.getElementById('login-stat-alerts').textContent = `${metricsData.expiring_soon} alertas`;
+    } catch (error) {
+        console.error(error);
+    }
 }
 
+function renderExpiringBatchesList(batchesArray) {
+    try {
+        const expiryListContainer = document.getElementById('dashboard-expiry-list');
+        expiryListContainer.innerHTML = batchesArray.map(batchItem => {
+            const daysRemainingValue = getDaysRemaining(batchItem.expiry_date);
+            const statusIdentifierClass = daysRemainingValue <= 0 ? 'critical' : daysRemainingValue <= 2 ? 'warning' : 'caution';
+            const daysRemainingString = daysRemainingValue <= 0 ? 'Hoy' : `${daysRemainingValue} días`;
 
-// Cargar productos
-async function loadProducts() {
-  try {
-    const [products, categories] = await Promise.all([
-      api.getProducts(),
-      api.getCategories()
-    ]);
+            return `
+                <div class="expiry-item ${statusIdentifierClass}">
+                    <div class="expiry-icon"><i class="fas fa-box"></i></div>
+                    <div class="expiry-info">
+                        <span class="expiry-name">${batchItem.product_name}</span>
+                        <span class="expiry-lot">Lote #${batchItem.batch_code}</span>
+                    </div>
+                    <div class="expiry-date">
+                        <span class="expiry-badge ${statusIdentifierClass}">${daysRemainingString}</span>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    } catch (error) {
+        console.error(error);
+    }
+}
 
-    AppState.products = products;
-    AppState.categories = categories;
+function renderRecentActivityList(movementsArray) {
+    try {
+        const activityListContainer = document.getElementById('dashboard-activity-list');
+        activityListContainer.innerHTML = movementsArray.slice(0, 5).map(movementRecord => {
+            const movementColorMap = { purchase: 'green', sale: 'blue', waste: 'red', adjustment: 'orange' };
+            const activeStatusColor = movementColorMap[movementRecord.movement_type] || 'blue';
 
-    // Renderizar grid
-    const grid = document.getElementById('products-grid');
-    grid.innerHTML = products.map(p => {
-      const stockPercent = Math.min(100, (Math.random() * 60 + 40)); // Simulado hasta tener stock real
-      const status = stockPercent < 20 ? 'danger' : stockPercent < 50 ? 'warning' : 'ok';
-      const statusText = stockPercent < 20 ? 'Crítico' : stockPercent < 50 ? 'Stock Bajo' : 'En Stock';
+            return `
+                <div class="activity-item">
+                    <div class="activity-dot ${activeStatusColor}"></div>
+                    <div class="activity-info">
+                        <span class="activity-text"><strong>${movementRecord.user_name}</strong> ${movementRecord.movement_type} de <strong>${movementRecord.quantity} unid.</strong> ${movementRecord.product_name}</span>
+                        <span class="activity-time">${formatDate(movementRecord.datetime)}</span>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    } catch (error) {
+        console.error(error);
+    }
+}
 
-      return `
-        <div class="product-card" onclick="viewProductDetail('${p.sku}')">
-          <div class="pc-image" style="background: linear-gradient(135deg, #dbeafe, #bfdbfe);">
-            <i class="fas fa-box" style="color:#3b82f6;font-size:2.5rem;"></i>
-            <span class="pc-badge ${status}">${statusText}</span>
-          </div>
-          <div class="pc-body">
-            <span class="pc-category">${p.category_name || 'General'}</span>
-            <h4>${p.name}</h4>
-            <p class="pc-sku">SKU: ${p.sku}</p>
-            <div class="pc-stock">
-              <div class="stock-bar"><div class="stock-fill" style="width:${stockPercent}%;background:${status === 'ok' ? '#10b981' : status === 'warning' ? '#f59e0b' : '#ef4444'};"></div></div>
-              <span>Stock disponible</span>
-            </div>
-            <div class="pc-footer">
-              <span class="pc-price">$${parseFloat(p.sale_price).toLocaleString()}</span>
-              <span class="pc-lots">Ver detalle</span>
-            </div>
-          </div>
-        </div>
-      `;
-    }).join('');
+function triggerNumericAnimations(metricsData) {
+    animateNumericValue('kpi-products', 0, metricsData.active_products, 1000);
+    animateNumericValue('kpi-batches', 0, metricsData.total_batches, 1000);
+}
 
-    // Filtros de categoría
-    const filterContainer = document.getElementById('category-filters');
-    filterContainer.innerHTML = `
-      <button class="chip active" onclick="filterProducts('all')">Todos <span class="chip-count">${products.length}</span></button>
-      ${categories.map(c => `<button class="chip" onclick="filterProducts('${c.category_id}')">${c.name} <span class="chip-count">${c.product_count}</span></button>`).join('')}
+function calculateMovementPlotData(chartDataArray) {
+    const daysOfWeekLabels = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+    const currentDate = new Date();
+    const lastSevenDaysArray = [];
+
+    for (let dayIndex = 6; dayIndex >= 0; dayIndex--) {
+        const targetDate = new Date();
+        targetDate.setDate(currentDate.getDate() - dayIndex);
+        lastSevenDaysArray.push({
+            dateString: targetDate.toISOString().split('T')[0],
+            dayNameString: daysOfWeekLabels[targetDate.getDay()]
+        });
+    }
+
+    return lastSevenDaysArray.map(dayItem => {
+        const matchingDayData = chartDataArray.find(dataItem => dataItem.date.startsWith(dayItem.dateString)) || { entries: 0, exits: 0 };
+        return { day: dayItem.dayNameString, entries: matchingDayData.entries, exits: matchingDayData.exits };
+    });
+}
+
+function buildMovementChartSvgMarkup(plottedDataValues, chartDimensions, maximumDataValue) {
+    const chartWorkingWidth = chartDimensions.width - chartDimensions.padding * 2;
+    const chartWorkingHeight = chartDimensions.height - chartDimensions.padding * 2;
+
+    const calculateXCoordinate = (index) => chartDimensions.padding + (index * chartWorkingWidth) / 6;
+    const calculateYCoordinate = (value) => (chartDimensions.height - chartDimensions.padding) - (value * chartWorkingHeight) / maximumDataValue;
+
+    let pathEntryLines = `M ${calculateXCoordinate(0)},${calculateYCoordinate(plottedDataValues[0].entries)}`;
+    let pathExitLines = `M ${calculateXCoordinate(0)},${calculateYCoordinate(plottedDataValues[0].exits)}`;
+    let areaEntryPolygon = `M ${calculateXCoordinate(0)},${chartDimensions.height - chartDimensions.padding} L ${calculateXCoordinate(0)},${calculateYCoordinate(plottedDataValues[0].entries)}`;
+    let areaExitPolygon = `M ${calculateXCoordinate(0)},${chartDimensions.height - chartDimensions.padding} L ${calculateXCoordinate(0)},${calculateYCoordinate(plottedDataValues[0].exits)}`;
+
+    let coordinateEntryPoints = '';
+    let coordinateExitPoints = '';
+    let axisLabelsText = '';
+
+    plottedDataValues.forEach((dataPoint, index) => {
+        const xCoordinate = calculateXCoordinate(index);
+        const yEntryCoordinate = calculateYCoordinate(dataPoint.entries);
+        const yExitCoordinate = calculateYCoordinate(dataPoint.exits);
+
+        if (index > 0) {
+            pathEntryLines += ` L ${xCoordinate},${yEntryCoordinate}`;
+            pathExitLines += ` L ${xCoordinate},${yExitCoordinate}`;
+        }
+        areaEntryPolygon += ` L ${xCoordinate},${yEntryCoordinate}`;
+        areaExitPolygon += ` L ${xCoordinate},${yExitCoordinate}`;
+
+        coordinateEntryPoints += `<circle cx="${xCoordinate}" cy="${yEntryCoordinate}" r="4" fill="#10b981" />`;
+        coordinateExitPoints += `<circle cx="${xCoordinate}" cy="${yExitCoordinate}" r="4" fill="#6366f1" />`;
+        axisLabelsText += `<text x="${xCoordinate}" y="${chartDimensions.height - 10}" text-anchor="middle" fill="var(--text-muted)" font-size="11">${dataPoint.day}</text>`;
+    });
+
+    areaEntryPolygon += ` L ${calculateXCoordinate(6)},${chartDimensions.height - chartDimensions.padding} Z`;
+    areaExitPolygon += ` L ${calculateXCoordinate(6)},${chartDimensions.height - chartDimensions.padding} Z`;
+
+    return `
+        <defs>
+            <linearGradient id="grad1" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" style="stop-color:#10b981;stop-opacity:0.2" />
+                <stop offset="100%" style="stop-color:#10b981;stop-opacity:0" />
+            </linearGradient>
+            <linearGradient id="grad2" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" style="stop-color:#6366f1;stop-opacity:0.2" />
+                <stop offset="100%" style="stop-color:#6366f1;stop-opacity:0" />
+            </linearGradient>
+        </defs>
+        <path d="${areaEntryPolygon}" fill="url(#grad1)" />
+        <path d="${pathEntryLines}" fill="none" stroke="#10b981" stroke-width="3" stroke-linecap="round" />
+        <path d="${areaExitPolygon}" fill="url(#grad2)" />
+        <path d="${pathExitLines}" fill="none" stroke="#6366f1" stroke-width="3" stroke-linecap="round" />
+        ${coordinateEntryPoints}
+        ${coordinateExitPoints}
+        ${axisLabelsText}
     `;
-
-    document.getElementById('count-all').textContent = products.length;
-
-  } catch (error) {
-    console.error('Error cargando productos:', error);
-  }
 }
 
-function filterProducts(category) {
-  // Implementar filtrado visual aquí
-  document.querySelectorAll('#category-filters .chip').forEach(c => c.classList.remove('active'));
-  event.target.closest('.chip').classList.add('active');
+function renderMovementChart(chartDataArray) {
+    try {
+        const svgContainerElement = document.querySelector('.line-chart-svg');
+        if (!svgContainerElement) return;
+
+        const plottedDataValues = calculateMovementPlotData(chartDataArray);
+        const maximumDataValue = Math.max(...plottedDataValues.map(dataPoint => Math.max(dataPoint.entries, dataPoint.exits)), 10);
+        const chartDimensionsConfiguration = { width: 600, height: 200, padding: 40 };
+
+        const svgMarkupContent = buildMovementChartSvgMarkup(plottedDataValues, chartDimensionsConfiguration, maximumDataValue);
+        svgContainerElement.innerHTML = svgMarkupContent;
+    } catch (error) {
+        console.error(error);
+    }
 }
 
-async function viewProductDetail(sku) {
-  try {
-    const product = await api.getProduct(sku);
-    document.getElementById('detail-name').textContent = product.name;
-    document.getElementById('detail-sku').textContent = 'SKU: ' + product.sku;
-    document.getElementById('detail-category').textContent = product.category_name || 'Sin categoría';
-    document.getElementById('detail-desc').textContent = product.description || 'Sin descripción';
-    document.getElementById('detail-unit').textContent = 'Unidad: ' + (product.unit_abbr || 'un');
-    document.getElementById('detail-min-stock').textContent = 'Stock Mínimo: ' + product.min_stock + ' ' + (product.unit_abbr || 'un');
-    document.getElementById('detail-price').textContent = 'Precio: $' + parseFloat(product.sale_price).toLocaleString();
-    document.getElementById('detail-breadcrumb').textContent = 'Productos / ' + product.name;
+function renderCategoryChartLegend(categoryDataArray, totalProductsCount, legendContainerElement, chartColorsArray) {
+    legendContainerElement.innerHTML = categoryDataArray.map((categoryItem, index) => `
+        <div class="legend-item">
+            <span class="legend-dot" style="background:${chartColorsArray[index % chartColorsArray.length]}"></span>
+            <span class="legend-label">${categoryItem.name}</span>
+            <span class="legend-val">${categoryItem.product_count}</span>
+        </div>
+    `).join('');
+}
 
-    // Cargar lotes del producto
-    const batches = await api.getBatches();
-    const productBatches = batches.filter(b => b.sku === sku);
+function renderCategoryChartSegments(categoryDataArray, totalProductsCount, svgContainerElement, chartColorsArray) {
+    const circleRadius = 80;
+    const circleCircumference = 2 * Math.PI * circleRadius;
+    let currentStrokeOffset = 0;
 
-    document.getElementById('detail-lots-table').innerHTML = productBatches.map(b => {
-      const days = getDaysRemaining(b.expiry_date);
-      return `
-        <tr>
-          <td><strong>#${b.batch_code}</strong></td>
-          <td>${formatDate(b.entry_date)}</td>
-          <td>${formatDate(b.expiry_date)}</td>
-          <td>${b.current_quantity}/${b.initial_quantity}</td>
-          <td>${getStatusBadge(days)}</td>
-          <td>
-            <button class="icon-btn-sm" title="Ver lote"><i class="fas fa-eye"></i></button>
-            <button class="icon-btn-sm" title="Registrar salida" onclick="registerOutput(${b.batch_id})"><i class="fas fa-minus-circle"></i></button>
-            <button class="icon-btn-sm btn-danger-text" title="Eliminar lote" onclick="deleteBatchConfirm(${b.batch_id})"><i class="fas fa-trash"></i></button>
-          </td>
-        </tr>
-      `;
+    const existingSegments = svgContainerElement.querySelectorAll('.donut-seg');
+    existingSegments.forEach(segmentElement => segmentElement.remove());
+
+    categoryDataArray.forEach((categoryItem, index) => {
+        if (categoryItem.product_count === 0) return;
+        const distributionPercent = categoryItem.product_count / totalProductsCount;
+        const currentStrokeDash = distributionPercent * circleCircumference;
+
+        const circleSvgElement = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+        circleSvgElement.setAttribute("cx", "100");
+        circleSvgElement.setAttribute("cy", "100");
+        circleSvgElement.setAttribute("r", "80");
+        circleSvgElement.setAttribute("fill", "none");
+        circleSvgElement.setAttribute("stroke", chartColorsArray[index % chartColorsArray.length]);
+        circleSvgElement.setAttribute("stroke-width", "24");
+        circleSvgElement.setAttribute("stroke-dasharray", `${currentStrokeDash} ${circleCircumference}`);
+        circleSvgElement.setAttribute("stroke-dashoffset", -currentStrokeOffset);
+        circleSvgElement.setAttribute("class", "donut-seg");
+
+        svgContainerElement.appendChild(circleSvgElement);
+        currentStrokeOffset += currentStrokeDash;
+    });
+
+    const overlayTextElements = svgContainerElement.querySelectorAll('text');
+    overlayTextElements.forEach(textElement => svgContainerElement.appendChild(textElement));
+}
+
+function renderCategoryChart(categoryDataArray) {
+    try {
+        const totalProductsCount = categoryDataArray.reduce((accumulator, currentCategory) => accumulator + currentCategory.product_count, 0);
+        document.getElementById('donut-total').textContent = totalProductsCount;
+
+        const chartColorsArray = ['#10b981', '#6366f1', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
+        const legendContainerElement = document.getElementById('categories-legend');
+        const svgContainerElement = document.querySelector('.donut-svg');
+
+        if (!svgContainerElement || !legendContainerElement) return;
+
+        renderCategoryChartLegend(categoryDataArray, totalProductsCount, legendContainerElement, chartColorsArray);
+        renderCategoryChartSegments(categoryDataArray, totalProductsCount, svgContainerElement, chartColorsArray);
+
+        if (window.GSAPIntegration) {
+            window.GSAPIntegration.animateDashboardExt(document.getElementById('screen-dashboard'));
+        }
+    } catch (error) {
+        console.error(error);
+    }
+}
+
+async function loadProducts() {
+    try {
+        const [productsListArray, categoriesListArray] = await Promise.all([
+            api.getProducts(),
+            api.getCategories()
+        ]);
+
+        AppState.products = productsListArray;
+        AppState.categories = categoriesListArray;
+
+        renderProductGrid(productsListArray);
+        renderCategoryFilters(categoriesListArray, productsListArray.length);
+    } catch (error) {
+        console.error(error);
+    }
+}
+
+function renderProductGrid(productsListArray) {
+    try {
+        const productGridContainer = document.getElementById('products-grid');
+        productGridContainer.innerHTML = productsListArray.map(productItem => {
+            const simulatedStockPercent = Math.min(100, (Math.random() * 60 + 40));
+            const inventoryStatus = simulatedStockPercent < 20 ? 'danger' : simulatedStockPercent < 50 ? 'warning' : 'ok';
+            const inventoryStatusText = simulatedStockPercent < 20 ? 'Crítico' : simulatedStockPercent < 50 ? 'Stock Bajo' : 'En Stock';
+            const statusColorCode = inventoryStatus === 'ok' ? '#10b981' : inventoryStatus === 'warning' ? '#f59e0b' : '#ef4444';
+
+            return `
+                <div class="product-card" onclick="viewProductDetail('${productItem.sku}')">
+                    <div class="pc-image" style="background: linear-gradient(135deg, #dbeafe, #bfdbfe);">
+                        <i class="fas fa-box" style="color:#3b82f6;font-size:2.5rem;"></i>
+                        <span class="pc-badge ${inventoryStatus}">${inventoryStatusText}</span>
+                    </div>
+                    <div class="pc-body">
+                        <span class="pc-category">${productItem.category_name || 'General'}</span>
+                        <h4>${productItem.name}</h4>
+                        <p class="pc-sku">SKU: ${productItem.sku}</p>
+                        <div class="pc-stock">
+                            <div class="stock-bar"><div class="stock-fill" style="width:${simulatedStockPercent}%;background:${statusColorCode};"></div></div>
+                            <span>Stock disponible</span>
+                        </div>
+                        <div class="pc-footer">
+                            <span class="pc-price">$${parseFloat(productItem.sale_price).toLocaleString()}</span>
+                            <span class="pc-lots">Ver detalle</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+        document.getElementById('count-all').textContent = productsListArray.length;
+    } catch (error) {
+        console.error(error);
+    }
+}
+
+function renderCategoryFilters(categoriesListArray, totalProductsCount) {
+    try {
+        const categoryFilterContainer = document.getElementById('category-filters');
+        categoryFilterContainer.innerHTML = `
+            <button class="chip active" onclick="filterProducts('all')">Todos <span class="chip-count">${totalProductsCount}</span></button>
+            ${categoriesListArray.map(categoryItem => `<button class="chip" onclick="filterProducts('${categoryItem.category_id}')">${categoryItem.name} <span class="chip-count">${categoryItem.product_count}</span></button>`).join('')}
+        `;
+    } catch (error) {
+        console.error(error);
+    }
+}
+
+function filterProducts(categoryIdentifier) {
+    try {
+        document.querySelectorAll('#category-filters .chip').forEach(chipElement => chipElement.classList.remove('active'));
+        if (event && event.target) {
+            event.target.closest('.chip').classList.add('active');
+        }
+    } catch (error) {
+        console.error(error);
+    }
+}
+
+function populateProductDetailFields(productDetailsObject) {
+    document.getElementById('detail-name').textContent = productDetailsObject.name;
+    document.getElementById('detail-sku').textContent = `SKU: ${productDetailsObject.sku}`;
+    document.getElementById('detail-category').textContent = productDetailsObject.category_name || 'Sin categoría';
+    document.getElementById('detail-desc').textContent = productDetailsObject.description || 'Sin descripción';
+    document.getElementById('detail-unit').textContent = `Unidad: ${productDetailsObject.unit_abbr || 'un'}`;
+    document.getElementById('detail-min-stock').textContent = `Stock Mínimo: ${productDetailsObject.min_stock} ${productDetailsObject.unit_abbr || 'un'}`;
+    document.getElementById('detail-price').textContent = `Precio: $${parseFloat(productDetailsObject.sale_price).toLocaleString()}`;
+    document.getElementById('detail-breadcrumb').textContent = `Productos / ${productDetailsObject.name}`;
+}
+
+function renderProductBatchesTable(productBatchesArray) {
+    const batchesTableContainer = document.getElementById('detail-lots-table');
+    batchesTableContainer.innerHTML = productBatchesArray.map(batchRecord => {
+        const daysRemainingValue = getDaysRemaining(batchRecord.expiry_date);
+        return `
+            <tr>
+                <td><strong>#${batchRecord.batch_code}</strong></td>
+                <td>${formatDate(batchRecord.entry_date)}</td>
+                <td>${formatDate(batchRecord.expiry_date)}</td>
+                <td>${batchRecord.current_quantity}/${batchRecord.initial_quantity}</td>
+                <td>${getStatusBadge(daysRemainingValue)}</td>
+                <td>
+                    <button class="icon-btn-sm" title="Ver lote"><i class="fas fa-eye"></i></button>
+                    <button class="icon-btn-sm" title="Registrar salida" onclick="registerOutput(${batchRecord.batch_id})"><i class="fas fa-minus-circle"></i></button>
+                    <button class="icon-btn-sm btn-danger-text" title="Eliminar lote" onclick="deleteBatchConfirm(${batchRecord.batch_id})"><i class="fas fa-trash"></i></button>
+                </td>
+            </tr>
+        `;
     }).join('') || '<tr><td colspan="6" style="text-align:center">No hay lotes activos</td></tr>';
-
-    // Botones de acción
-    document.getElementById('btn-edit-product').onclick = () => editProduct(product);
-    document.getElementById('btn-delete-product').onclick = () => deleteProductConfirm(product.sku);
-
-    navigateTo('screen-product-detail');
-  } catch (error) {
-    showToast('Error', 'No se pudo cargar el producto', 'error');
-  }
 }
 
-// Cargar lotes
+async function viewProductDetail(productSkuIdentifier) {
+    try {
+        const productDetailsObject = await api.getProduct(productSkuIdentifier);
+        populateProductDetailFields(productDetailsObject);
+
+        const allBatchesArray = await api.getBatches();
+        const specificProductBatches = allBatchesArray.filter(batchRecord => batchRecord.sku === productSkuIdentifier);
+        renderProductBatchesTable(specificProductBatches);
+
+        document.getElementById('btn-edit-product').onclick = () => editProduct(productDetailsObject);
+        document.getElementById('btn-delete-product').onclick = () => deleteProductConfirm(productDetailsObject.sku);
+
+        navigateTo('screen-product-detail');
+    } catch (error) {
+        console.error(error);
+        showToast('Error', 'No se pudo cargar el producto', 'error');
+    }
+}
+
 async function loadLots() {
-  try {
-    const batches = await api.getBatches();
-    AppState.batches = batches;
+    try {
+        const allBatchesArray = await api.getBatches();
+        AppState.batches = allBatchesArray;
 
-    const tbody = document.getElementById('lots-table-body');
-    tbody.innerHTML = batches.map((b, index) => {
-      const days = getDaysRemaining(b.expiry_date);
-      const rowClass = days < 0 ? 'row-critical' : days <= 3 ? 'row-warning' : '';
-      const priority = index < 3 ? 'p1' : index < 6 ? 'p2' : 'p3';
-      const priorityIcon = index < 3 ? '🔴' : index < 6 ? '🟠' : '🟢';
+        const tableBodyContainer = document.getElementById('lots-table-body');
+        tableBodyContainer.innerHTML = allBatchesArray.map((batchRecord, indexPosition) => {
+            const daysRemainingValue = getDaysRemaining(batchRecord.expiry_date);
+            const rowHighlightClass = daysRemainingValue < 0 ? 'row-critical' : daysRemainingValue <= 3 ? 'row-warning' : '';
+            const outputPriorityLevel = indexPosition < 3 ? 'p1' : indexPosition < 6 ? 'p2' : 'p3';
+            const outputPriorityLabel = indexPosition < 3 ? '[Alta]' : indexPosition < 6 ? '[Media]' : '[Baja]';
+            const stockBarColorCode = daysRemainingValue < 0 ? '#ef4444' : daysRemainingValue < 3 ? '#f59e0b' : '#10b981';
+            const stockBarWidthPercentage = (batchRecord.current_quantity / batchRecord.initial_quantity) * 100;
 
-      return `
-        <tr class="${rowClass}">
-          <td><strong>#${b.batch_code}</strong></td>
-          <td><div class="td-product"><i class="fas fa-box"></i> ${b.product_name}</div></td>
-          <td>${formatDate(b.entry_date)}</td>
-          <td>${formatDate(b.expiry_date)}</td>
-          <td>
-            <div class="mini-stock">
-              <div class="stock-bar"><div class="stock-fill" style="width:${(b.current_quantity / b.initial_quantity) * 100}%;background:${days < 0 ? '#ef4444' : days < 3 ? '#f59e0b' : '#10b981'};"></div></div>
-              <span>${b.current_quantity}/${b.initial_quantity}</span>
-            </div>
-          </td>
-          <td>${b.warehouse_location || '-'}</td>
-          <td>${getStatusBadge(days)}</td>
-          <td><span class="peps-priority ${priority}">${priorityIcon} ${index + 1}°</span></td>
-          <td>
-            <button class="icon-btn-sm" title="Ver lote"><i class="fas fa-eye"></i></button>
-            <button class="icon-btn-sm" title="Registrar salida" onclick="registerOutput(${b.batch_id})"><i class="fas fa-minus-circle"></i></button>
-            <button class="icon-btn-sm btn-danger-text" title="Eliminar lote" onclick="deleteBatchConfirm(${b.batch_id})"><i class="fas fa-trash"></i></button>
-          </td>
-        </tr>
-      `;
-    }).join('');
-
-  } catch (error) {
-    console.error('Error cargando lotes:', error);
-  }
+            return `
+                <tr class="${rowHighlightClass}">
+                    <td><strong>#${batchRecord.batch_code}</strong></td>
+                    <td><div class="td-product"><i class="fas fa-box"></i> ${batchRecord.product_name}</div></td>
+                    <td>${formatDate(batchRecord.entry_date)}</td>
+                    <td>${formatDate(batchRecord.expiry_date)}</td>
+                    <td>
+                        <div class="mini-stock">
+                            <div class="stock-bar"><div class="stock-fill" style="width:${stockBarWidthPercentage}%;background:${stockBarColorCode};"></div></div>
+                            <span>${batchRecord.current_quantity}/${batchRecord.initial_quantity}</span>
+                        </div>
+                    </td>
+                    <td>${batchRecord.warehouse_location || '-'}</td>
+                    <td>${getStatusBadge(daysRemainingValue)}</td>
+                    <td><span class="peps-priority ${outputPriorityLevel}">${outputPriorityLabel} ${indexPosition + 1}°</span></td>
+                    <td>
+                        <button class="icon-btn-sm" title="Ver lote"><i class="fas fa-eye"></i></button>
+                        <button class="icon-btn-sm" title="Registrar salida" onclick="registerOutput(${batchRecord.batch_id})"><i class="fas fa-minus-circle"></i></button>
+                        <button class="icon-btn-sm btn-danger-text" title="Eliminar lote" onclick="deleteBatchConfirm(${batchRecord.batch_id})"><i class="fas fa-trash"></i></button>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+    } catch (error) {
+        console.error(error);
+    }
 }
 
-// Preparar formulario de lotes
 async function prepareLotForm() {
-  try {
-    const [products, suppliers] = await Promise.all([
-      api.getProducts(),
-      api.getSuppliers()
-    ]);
+    try {
+        const [productsListArray, suppliersListArray] = await Promise.all([
+            api.getProducts(),
+            api.getSuppliers()
+        ]);
 
-    const productSelect = document.getElementById('lot-product-select');
-    const supplierSelect = document.getElementById('lot-supplier-select');
+        const productDropdownSelect = document.getElementById('lot-product-select');
+        const supplierDropdownSelect = document.getElementById('lot-supplier-select');
 
-    productSelect.innerHTML = '<option value="">Seleccionar producto...</option>' +
-      products.map(p => `<option value="${p.sku}">${p.name}</option>`).join('');
+        productDropdownSelect.innerHTML = '<option value="">Seleccionar producto...</option>' +
+            productsListArray.map(productItem => `<option value="${productItem.sku}">${productItem.name}</option>`).join('');
 
-    supplierSelect.innerHTML = '<option value="">Seleccionar proveedor...</option>' +
-      suppliers.map(s => `<option value="${s.supplier_id}">${s.name}</option>`).join('');
+        supplierDropdownSelect.innerHTML = '<option value="">Seleccionar proveedor...</option>' +
+            suppliersListArray.map(supplierItem => `<option value="${supplierItem.supplier_id}">${supplierItem.name}</option>`).join('');
 
-    // Setear fecha de hoy
-    const today = new Date().toISOString().split('T')[0];
-    document.querySelector('input[name="entry_date"]').value = today;
-
-  } catch (error) {
-    console.error('Error preparando formulario:', error);
-  }
+        const currentDateString = new Date().toISOString().split('T')[0];
+        document.querySelector('input[name="entry_date"]').value = currentDateString;
+    } catch (error) {
+        console.error(error);
+    }
 }
 
-// Crear lote
 document.addEventListener('DOMContentLoaded', () => {
-  const lotForm = document.getElementById('lot-form');
-  if (lotForm) {
-    lotForm.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const formData = new FormData(lotForm);
-      const data = Object.fromEntries(formData);
-
-      // Convertir a números donde sea necesario
-      data.supplier_id = data.supplier_id || null;
-      data.initial_quantity = parseFloat(data.initial_quantity);
-      data.unit_cost = parseFloat(data.unit_cost) || 0;
-
-      try {
-        const res = await api.createBatch(data);
-        if (res.ok) {
-          showToast('Éxito', 'Lote registrado correctamente', 'success');
-          lotForm.reset();
-          navigateTo('screen-lots');
-        } else {
-          const err = await res.json();
-          showToast('Error', err.error || 'No se pudo registrar el lote', 'error');
-        }
-      } catch (error) {
-        showToast('Error', 'Error de conexión', 'error');
-      }
-    });
-  }
-
-  // Crear producto
-  const productForm = document.getElementById('new-product-form');
-  if (productForm) {
-    productForm.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const formData = new FormData(productForm);
-      const data = Object.fromEntries(formData);
-
-      data.sale_price = parseFloat(data.sale_price);
-      data.min_stock = parseFloat(data.min_stock) || 0;
-      data.category_id = data.category_id || null;
-      data.requires_refrigeration = data.requires_refrigeration ? true : false;
-
-      try {
-        const isEdit = data.form_mode === 'edit';
-        const res = isEdit 
-          ? await api.updateProduct(data.sku, data)
-          : await api.createProduct(data);
-
-        if (res.ok) {
-          showToast('Éxito', isEdit ? 'Producto actualizado' : 'Producto creado', 'success');
-          closeNewProductPanel();
-          productForm.reset();
-          loadProducts();
-          if (isEdit) navigateTo('screen-products');
-        } else {
-          const err = await res.json();
-          showToast('Error', err.error || 'No se pudo crear el producto', 'error');
-        }
-      } catch (error) {
-        showToast('Error', 'Error de conexión', 'error');
-      }
-    });
-  }
+    initializeBatchRegistrationHandler();
+    initializeProductRegistrationHandler();
 });
 
-// Cargar alertas
-async function loadAlerts() {
-  try {
-    const expiring = await api.getExpiringBatches(30);
+function initializeBatchRegistrationHandler() {
+    const batchRegistrationForm = document.getElementById('lot-form');
+    if (!batchRegistrationForm) return;
 
-    document.getElementById('alert-expired').textContent = expiring.filter(b => getDaysRemaining(b.expiry_date) < 0).length;
-    document.getElementById('alert-today').textContent = expiring.filter(b => getDaysRemaining(b.expiry_date) === 0).length;
-    document.getElementById('alert-week').textContent = expiring.filter(b => {
-      const d = getDaysRemaining(b.expiry_date);
-      return d > 0 && d <= 7;
-    }).length;
-    document.getElementById('alert-stock').textContent = '3'; // Simulado
+    batchRegistrationForm.addEventListener('submit', async (submitEvent) => {
+        submitEvent.preventDefault();
+        try {
+            const formSubmissionData = new FormData(batchRegistrationForm);
+            const formattedPayload = Object.fromEntries(formSubmissionData);
 
-    const container = document.getElementById('alerts-container');
-    container.innerHTML = expiring.map(batch => {
-      const days = getDaysRemaining(batch.expiry_date);
-      let typeClass = 'alert-warning';
-      let icon = 'fa-clock';
-      let title = 'Próximo a Vencer';
+            formattedPayload.supplier_id = formattedPayload.supplier_id || null;
+            formattedPayload.initial_quantity = parseFloat(formattedPayload.initial_quantity);
+            formattedPayload.unit_cost = parseFloat(formattedPayload.unit_cost) || 0;
 
-      if (days < 0) {
-        typeClass = 'alert-critical';
-        icon = 'fa-skull-crossbones';
-        title = 'Producto VENCIDO';
-      } else if (days === 0) {
-        typeClass = 'alert-danger';
-        icon = 'fa-exclamation-circle';
-        title = 'Vence HOY';
-      }
-
-      return `
-        <div class="alert-item ${typeClass}">
-          <div class="alert-icon-wrap ${days < 0 ? 'critical' : days === 0 ? 'danger' : 'warning'}">
-            <i class="fas ${icon}"></i>
-          </div>
-          <div class="alert-content">
-            <div class="alert-header-row">
-              <h4>${title} - ${batch.product_name}</h4>
-              <span class="alert-time">${formatDate(batch.expiry_date)}</span>
-            </div>
-            <p>Lote #${batch.batch_code} - ${days < 0 ? 'Vencido hace ' + Math.abs(days) + ' días' : days === 0 ? 'Vence hoy' : days + ' días restantes'}</p>
-            <div class="alert-actions">
-              <button class="btn-outline btn-sm">Ver Lote</button>
-              ${days < 0 ? '<button class="btn-danger btn-sm">Registrar Merma</button>' : ''}
-            </div>
-          </div>
-        </div>
-      `;
-    }).join('');
-
-  } catch (error) {
-    console.error('Error cargando alertas:', error);
-  }
-}
-
-// Cargar proveedores
-async function loadSuppliers() {
-  try {
-    const suppliers = await api.getSuppliers();
-    const grid = document.getElementById('suppliers-grid');
-
-    grid.innerHTML = suppliers.map(s => `
-      <div class="supplier-card">
-        <div class="sc-header">
-          <div class="sc-avatar" style="background:#dbeafe;color:#3b82f6;">${s.name.substring(0, 2).toUpperCase()}</div>
-          <div class="sc-info"><h4>${s.name}</h4><span class="sc-type">Proveedor</span></div>
-          <span class="status-badge ok">Activo</span>
-        </div>
-        <div class="sc-body">
-          <div class="sc-detail"><i class="fas fa-phone"></i> ${s.phone || 'N/A'}</div>
-          <div class="sc-detail"><i class="fas fa-envelope"></i> ${s.email || 'N/A'}</div>
-          <div class="sc-stats">
-            <div class="sc-stat"><span class="sc-stat-val">${s.product_count}</span><span class="sc-stat-lbl">Productos</span></div>
-            <div class="sc-stat"><span class="sc-stat-val">${s.batch_count}</span><span class="sc-stat-lbl">Lotes</span></div>
-          </div>
-        </div>
-        <div class="sc-footer">
-          <button class="btn-outline btn-sm"><i class="fas fa-eye"></i> Ver</button>
-        </div>
-      </div>
-    `).join('');
-
-  } catch (error) {
-    console.error('Error cargando proveedores:', error);
-  }
-}
-
-// Cargar categorías en select
-async function loadCategoriesSelect() {
-  try {
-    const categories = await api.getCategories();
-    const select = document.getElementById('new-product-category');
-    if (select) {
-      select.innerHTML = '<option value="">Seleccionar...</option>' +
-        categories.map(c => `<option value="${c.category_id}">${c.name}</option>`).join('');
-    }
-  } catch (error) {
-    console.error('Error cargando categorías:', error);
-  }
-}
-
-// CRUD: Editar producto
-function editProduct(product) {
-  const form = document.getElementById('new-product-form');
-  document.getElementById('product-panel-title').innerHTML = `<i class="fas fa-edit"></i> Editar Producto: ${product.sku}`;
-  document.getElementById('product-form-mode').value = 'edit';
-  
-  // Llenar campos
-  form.sku.value = product.sku;
-  form.sku.readOnly = true; // No permitir cambiar SKU en edición
-  form.name.value = product.name;
-  form.description.value = product.description || '';
-  form.category_id.value = product.category_id || '';
-  form.unit_id.value = product.unit_id || 5;
-  form.sale_price.value = product.sale_price;
-  form.min_stock.value = product.min_stock;
-  form.barcode.value = product.barcode || '';
-  form.requires_refrigeration.checked = product.requires_refrigeration ? true : false;
-
-  openNewProductPanel();
-}
-
-// CRUD: Eliminar producto
-async function deleteProductConfirm(sku) {
-  if (confirm(`¿Estás seguro de eliminar el producto ${sku}? This cannot be undone.`)) {
-    try {
-      const res = await api.deleteProduct(sku);
-      if (res.ok) {
-        showToast('Éxito', 'Producto eliminado exitosamente', 'success');
-        loadProducts();
-        navigateTo('screen-products');
-      } else {
-        const err = await res.json();
-        showToast('Error', err.error || 'No se pudo eliminar', 'error');
-      }
-    } catch (error) {
-      showToast('Error', 'Error de conexión', 'error');
-    }
-  }
-}
-
-// Animación de números
-function animateValue(id, start, end, duration) {
-  const obj = document.getElementById(id);
-  if (!obj) return;
-  let startTimestamp = null;
-  const step = (timestamp) => {
-    if (!startTimestamp) startTimestamp = timestamp;
-    const progress = Math.min((timestamp - startTimestamp) / duration, 1);
-    obj.innerHTML = Math.floor(progress * (end - start) + start);
-    if (progress < 1) {
-      window.requestAnimationFrame(step);
-    }
-  };
-  window.requestAnimationFrame(step);
-}
-
-// Registrar salida (simulado)
-function registerOutput(batchId) {
-  const quantity = prompt('Ingrese cantidad a retirar:');
-  if (quantity && !isNaN(quantity)) {
-    showToast('Éxito', `Se registraron ${quantity} unidades de salida`, 'success');
-    loadLots(); // Recargar
-  }
-}
-
-// Eliminar lote
-async function deleteBatchConfirm(id) {
-  if (confirm('¿Estás seguro de eliminar este lote permanentemente? Esta acción eliminará también el historial de movimientos asociado.')) {
-    try {
-      const res = await api.deleteBatch(id);
-      if (res.ok) {
-        showToast('Éxito', 'Lote eliminado', 'success');
-        if (AppState.currentScreen === 'screen-lots') loadLots();
-        if (AppState.currentScreen === 'screen-product-detail') {
-          const sku = document.getElementById('detail-sku').textContent.replace('SKU: ', '');
-          viewProductDetail(sku);
+            const apiResponse = await api.createBatch(formattedPayload);
+            if (apiResponse.ok) {
+                showToast('Éxito', 'Lote registrado correctamente', 'success');
+                batchRegistrationForm.reset();
+                navigateTo('screen-lots');
+            } else {
+                const responseErrorData = await apiResponse.json();
+                showToast('Error', responseErrorData.error || 'No se pudo registrar el lote', 'error');
+            }
+        } catch (error) {
+            console.error(error);
+            showToast('Error', 'Error de conexión', 'error');
         }
-      } else {
-        const err = await res.json();
-        showToast('Error', err.error || 'No se pudo eliminar el lote', 'error');
-      }
+    });
+}
+
+function initializeProductRegistrationHandler() {
+    const productRegistrationForm = document.getElementById('new-product-form');
+    if (!productRegistrationForm) return;
+
+    productRegistrationForm.addEventListener('submit', async (submitEvent) => {
+        submitEvent.preventDefault();
+        try {
+            const formSubmissionData = new FormData(productRegistrationForm);
+            const formattedPayload = Object.fromEntries(formSubmissionData);
+
+            formattedPayload.sale_price = parseFloat(formattedPayload.sale_price);
+            formattedPayload.min_stock = parseFloat(formattedPayload.min_stock) || 0;
+            formattedPayload.category_id = formattedPayload.category_id || null;
+            formattedPayload.requires_refrigeration = !!formattedPayload.requires_refrigeration;
+
+            const isEditModeActive = formattedPayload.form_mode === 'edit';
+            const apiResponse = isEditModeActive
+                ? await api.updateProduct(formattedPayload.sku, formattedPayload)
+                : await api.createProduct(formattedPayload);
+
+            if (apiResponse.ok) {
+                showToast('Éxito', isEditModeActive ? 'Producto actualizado' : 'Producto creado', 'success');
+                closeNewProductPanel();
+                productRegistrationForm.reset();
+                loadProducts();
+                if (isEditModeActive) navigateTo('screen-products');
+            } else {
+                const responseErrorData = await apiResponse.json();
+                showToast('Error', responseErrorData.error || 'No se pudo crear el producto', 'error');
+            }
+        } catch (error) {
+            console.error(error);
+            showToast('Error', 'Error de conexión', 'error');
+        }
+    });
+}
+
+function updateAlertCountersDisplay(expiringBatchesArray) {
+    try {
+        document.getElementById('alert-expired').textContent = expiringBatchesArray.filter(batchRecord => getDaysRemaining(batchRecord.expiry_date) < 0).length;
+        document.getElementById('alert-today').textContent = expiringBatchesArray.filter(batchRecord => getDaysRemaining(batchRecord.expiry_date) === 0).length;
+        document.getElementById('alert-week').textContent = expiringBatchesArray.filter(batchRecord => {
+            const daysRemainingValue = getDaysRemaining(batchRecord.expiry_date);
+            return daysRemainingValue > 0 && daysRemainingValue <= 7;
+        }).length;
+        document.getElementById('alert-stock').textContent = '3';
     } catch (error) {
-      showToast('Error', 'Error de conexión', 'error');
+        console.error(error);
     }
-  }
+}
+
+async function loadAlerts() {
+    try {
+        const expiringBatchesList = await api.getExpiringBatches(30);
+        updateAlertCountersDisplay(expiringBatchesList);
+
+        const alertsContainerElement = document.getElementById('alerts-container');
+        alertsContainerElement.innerHTML = expiringBatchesList.map(batchRecord => {
+            const daysRemainingValue = getDaysRemaining(batchRecord.expiry_date);
+            let alertTypeClass = 'alert-warning';
+            let alertIconClass = 'fa-clock';
+            let alertTitleString = 'Próximo a Vencer';
+
+            if (daysRemainingValue < 0) {
+                alertTypeClass = 'alert-critical';
+                alertIconClass = 'fa-skull-crossbones';
+                alertTitleString = 'Producto VENCIDO';
+            } else if (daysRemainingValue === 0) {
+                alertTypeClass = 'alert-danger';
+                alertIconClass = 'fa-exclamation-circle';
+                alertTitleString = 'Vence HOY';
+            }
+
+            const alertIconWrapperClass = daysRemainingValue < 0 ? 'critical' : daysRemainingValue === 0 ? 'danger' : 'warning';
+            const alertTimeSubtext = daysRemainingValue < 0 ? `Vencido hace ${Math.abs(daysRemainingValue)} días` : daysRemainingValue === 0 ? 'Vence hoy' : `${daysRemainingValue} días restantes`;
+            const alertActionButtonHtml = daysRemainingValue < 0 ? '<button class="btn-danger btn-sm">Registrar Merma</button>' : '';
+
+            return `
+                <div class="alert-item ${alertTypeClass}">
+                    <div class="alert-icon-wrap ${alertIconWrapperClass}">
+                        <i class="fas ${alertIconClass}"></i>
+                    </div>
+                    <div class="alert-content">
+                        <div class="alert-header-row">
+                            <h4>${alertTitleString} - ${batchRecord.product_name}</h4>
+                            <span class="alert-time">${formatDate(batchRecord.expiry_date)}</span>
+                        </div>
+                        <p>Lote #${batchRecord.batch_code} - ${alertTimeSubtext}</p>
+                        <div class="alert-actions">
+                            <button class="btn-outline btn-sm">Ver Lote</button>
+                            ${alertActionButtonHtml}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+    } catch (error) {
+        console.error(error);
+    }
+}
+
+async function loadSuppliers() {
+    try {
+        const suppliersListArray = await api.getSuppliers();
+        const suppliersGridContainer = document.getElementById('suppliers-grid');
+
+        suppliersGridContainer.innerHTML = suppliersListArray.map(supplierItem => `
+            <div class="supplier-card">
+                <div class="sc-header">
+                    <div class="sc-avatar" style="background:#dbeafe;color:#3b82f6;">${supplierItem.name.substring(0, 2).toUpperCase()}</div>
+                    <div class="sc-info"><h4>${supplierItem.name}</h4><span class="sc-type">Proveedor</span></div>
+                    <span class="status-badge ok">Activo</span>
+                </div>
+                <div class="sc-body">
+                    <div class="sc-detail"><i class="fas fa-phone"></i> ${supplierItem.phone || 'N/A'}</div>
+                    <div class="sc-detail"><i class="fas fa-envelope"></i> ${supplierItem.email || 'N/A'}</div>
+                    <div class="sc-stats">
+                        <div class="sc-stat"><span class="sc-stat-val">${supplierItem.product_count}</span><span class="sc-stat-lbl">Productos</span></div>
+                        <div class="sc-stat"><span class="sc-stat-val">${supplierItem.batch_count}</span><span class="sc-stat-lbl">Lotes</span></div>
+                    </div>
+                </div>
+                <div class="sc-footer">
+                    <button class="btn-outline btn-sm"><i class="fas fa-eye"></i> Ver</button>
+                </div>
+            </div>
+        `).join('');
+
+    } catch (error) {
+        console.error(error);
+    }
+}
+
+async function loadCategoriesSelect() {
+    try {
+        const categoriesListArray = await api.getCategories();
+        const categoryDropdownSelect = document.getElementById('new-product-category');
+        if (categoryDropdownSelect) {
+            categoryDropdownSelect.innerHTML = '<option value="">Seleccionar...</option>' +
+                categoriesListArray.map(categoryItem => `<option value="${categoryItem.category_id}">${categoryItem.name}</option>`).join('');
+        }
+    } catch (error) {
+        console.error(error);
+    }
+}
+
+function editProduct(productDetailsObject) {
+    try {
+        const productRegistrationForm = document.getElementById('new-product-form');
+        document.getElementById('product-panel-title').innerHTML = `<i class="fas fa-edit"></i> Editar Producto: ${productDetailsObject.sku}`;
+        document.getElementById('product-form-mode').value = 'edit';
+
+        productRegistrationForm.sku.value = productDetailsObject.sku;
+        productRegistrationForm.sku.readOnly = true;
+        productRegistrationForm.name.value = productDetailsObject.name;
+        productRegistrationForm.description.value = productDetailsObject.description || '';
+        productRegistrationForm.category_id.value = productDetailsObject.category_id || '';
+        productRegistrationForm.unit_id.value = productDetailsObject.unit_id || 5;
+        productRegistrationForm.sale_price.value = productDetailsObject.sale_price;
+        productRegistrationForm.min_stock.value = productDetailsObject.min_stock;
+        productRegistrationForm.barcode.value = productDetailsObject.barcode || '';
+        productRegistrationForm.requires_refrigeration.checked = !!productDetailsObject.requires_refrigeration;
+
+        openNewProductPanel();
+    } catch (error) {
+        console.error(error);
+    }
+}
+
+async function deleteProductConfirm(productSkuIdentifier) {
+    if (confirm(`¿Estás seguro de eliminar el producto ${productSkuIdentifier}?`)) {
+        try {
+            const apiResponse = await api.deleteProduct(productSkuIdentifier);
+            if (apiResponse.ok) {
+                showToast('Éxito', 'Producto eliminado exitosamente', 'success');
+                loadProducts();
+                navigateTo('screen-products');
+            } else {
+                const responseErrorData = await apiResponse.json();
+                showToast('Error', responseErrorData.error || 'No se pudo eliminar', 'error');
+            }
+        } catch (error) {
+            console.error(error);
+            showToast('Error', 'Error de conexión', 'error');
+        }
+    }
+}
+
+function animateNumericValue(targetElementId, startValue, endValue, animationDurationMs) {
+    try {
+        const targetDomElement = document.getElementById(targetElementId);
+        if (!targetDomElement) return;
+        let animationStartTimestamp = null;
+
+        const animationStepProcessor = (currentTimestamp) => {
+            if (!animationStartTimestamp) animationStartTimestamp = currentTimestamp;
+            const animationProgressRatio = Math.min((currentTimestamp - animationStartTimestamp) / animationDurationMs, 1);
+            targetDomElement.innerHTML = Math.floor(animationProgressRatio * (endValue - startValue) + startValue);
+
+            if (animationProgressRatio < 1) {
+                window.requestAnimationFrame(animationStepProcessor);
+            }
+        };
+        window.requestAnimationFrame(animationStepProcessor);
+    } catch (error) {
+        console.error(error);
+    }
+}
+
+function registerOutput(batchIdentifierId) {
+    try {
+        const outputQuantityValue = prompt('Ingrese cantidad a retirar:');
+        if (outputQuantityValue && !isNaN(outputQuantityValue)) {
+            showToast('Éxito', `Se registraron ${outputQuantityValue} unidades de salida`, 'success');
+            loadLots();
+        }
+    } catch (error) {
+        console.error(error);
+    }
+}
+
+async function deleteBatchConfirm(batchIdentifierId) {
+    if (confirm('¿Estás seguro de eliminar este lote permanentemente? Esta acción eliminará también el historial de movimientos asociado.')) {
+        try {
+            const apiResponse = await api.deleteBatch(batchIdentifierId);
+            if (apiResponse.ok) {
+                showToast('Éxito', 'Lote eliminado', 'success');
+                if (AppState.currentScreen === 'screen-lots') loadLots();
+                if (AppState.currentScreen === 'screen-product-detail') {
+                    const extractedSkuValue = document.getElementById('detail-sku').textContent.replace('SKU: ', '');
+                    viewProductDetail(extractedSkuValue);
+                }
+            } else {
+                const responseErrorData = await apiResponse.json();
+                showToast('Error', responseErrorData.error || 'No se pudo eliminar el lote', 'error');
+            }
+        } catch (error) {
+            console.error(error);
+            showToast('Error', 'Error de conexión', 'error');
+        }
+    }
 }

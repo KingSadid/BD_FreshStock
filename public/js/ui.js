@@ -1,7 +1,3 @@
-/**
- * Application State Module
- * Centralized state management with read-only access pattern
- */
 const ApplicationState = (function() {
     const state = {
         currentScreenId: 'screen-login',
@@ -18,13 +14,16 @@ const ApplicationState = (function() {
         isNavigating: () => state.isTransitioning,
         setNavigating: (status) => { state.isTransitioning = status; },
         getProducts: () => [...state.productList],
-        setProducts: (products) => { state.productList = products; }
+        setProducts: (products) => { state.productList = products; },
+        getBatches: () => [...state.batchList],
+        setBatches: (batches) => { state.batchList = batches; },
+        getSuppliers: () => [...state.supplierList],
+        setSuppliers: (suppliers) => { state.supplierList = suppliers; },
+        getCategories: () => [...state.categoryList],
+        setCategories: (categories) => { state.categoryList = categories; }
     };
 })();
 
-/**
- * UI Configuration Constants
- */
 const TOAST_CONFIG = Object.freeze({
     types: {
         success: { color: 'var(--primary)', icon: 'fa-check-circle' },
@@ -37,17 +36,14 @@ const TOAST_CONFIG = Object.freeze({
 });
 
 const SCREEN_HANDLERS = Object.freeze({
-    'screen-dashboard': () => loadDashboard(),
-    'screen-products': () => loadProducts(),
-    'screen-lots': () => loadLots(),
-    'screen-alerts': () => loadAlerts(),
-    'screen-suppliers': () => loadSuppliers(),
-    'screen-lot-register': () => prepareLotForm()
+    'screen-dashboard': () => { if (typeof loadDashboard === 'function') loadDashboard(); },
+    'screen-products': () => { if (typeof loadProducts === 'function') loadProducts(); },
+    'screen-lots': () => { if (typeof loadLots === 'function') loadLots(); },
+    'screen-alerts': () => { if (typeof loadAlerts === 'function') loadAlerts(); },
+    'screen-suppliers': () => { if (typeof loadSuppliers === 'function') loadSuppliers(); },
+    'screen-lot-register': () => { if (typeof prepareLotForm === 'function') prepareLotForm(); }
 });
 
-/**
- * Navigation Module
- */
 const NavigationManager = (function() {
     function updateSidebarActiveState(targetScreenId) {
         const menuItems = document.querySelectorAll('.sidebar-menu li');
@@ -57,31 +53,44 @@ const NavigationManager = (function() {
         });
     }
 
+    function removeCurrentScreenState(currentScreen) {
+        if (!currentScreen) return;
+        currentScreen.classList.remove('active');
+        if (typeof gsap !== 'undefined') {
+            gsap.set(currentScreen, { opacity: 0 });
+        }
+    }
+
+    function animateNewScreenState(nextScreen, loadingOverlay, resolveCallback) {
+        nextScreen.classList.add('active');
+        
+        if (typeof gsap !== 'undefined') {
+            gsap.to(nextScreen, { opacity: 1, duration: 0.4 });
+            gsap.to(loadingOverlay, {
+                opacity: 0, 
+                duration: 0.3, 
+                onComplete: () => {
+                    gsap.set(loadingOverlay, { display: 'none' });
+                    resolveCallback();
+                }
+            });
+        } else {
+            loadingOverlay.style.display = 'none';
+            resolveCallback();
+        }
+    }
+
     function animateTransition(currentScreen, nextScreen, loadingOverlay) {
         return new Promise((resolve) => {
-            gsap.set(loadingOverlay, { opacity: 1, display: 'flex' });
+            if (typeof gsap !== 'undefined') {
+                gsap.set(loadingOverlay, { opacity: 1, display: 'flex' });
+            } else {
+                loadingOverlay.style.display = 'flex';
+            }
 
             setTimeout(() => {
-                if (currentScreen) {
-                    currentScreen.classList.remove('active');
-                    gsap.set(currentScreen, { opacity: 0 });
-                }
-
-                nextScreen.classList.add('active');
-                
-                const entranceAnimation = gsap.to(nextScreen, { 
-                    opacity: 1, 
-                    duration: 0.4 
-                });
-                
-                const exitAnimation = gsap.to(loadingOverlay, {
-                    opacity: 0, 
-                    duration: 0.3, 
-                    onComplete: () => {
-                        gsap.set(loadingOverlay, { display: 'none' });
-                        resolve();
-                    }
-                });
+                removeCurrentScreenState(currentScreen);
+                animateNewScreenState(nextScreen, loadingOverlay, resolve);
             }, 300);
         });
     }
@@ -103,9 +112,8 @@ const NavigationManager = (function() {
             const nextScreenElement = document.getElementById(screenId);
             const loadingElement = document.getElementById('loading-overlay');
 
-            if (!nextScreenElement) {
-                console.warn(`Screen ${screenId} not found in DOM`);
-                ApplicationState.setNavigating(false);
+            if (!nextScreenElement || !loadingElement) {
+                console.warn(`Required DOM elements for navigation not found`);
                 return;
             }
 
@@ -124,18 +132,12 @@ const NavigationManager = (function() {
     return { transitionToScreen };
 })();
 
-/**
- * Notification Module
- */
 const NotificationManager = (function() {
     function createToastElement(title, message, type) {
         const config = TOAST_CONFIG.types[type] || TOAST_CONFIG.types.info;
         const toastContainer = document.getElementById('toast-container');
         
-        if (!toastContainer) {
-            console.error('Toast container not found');
-            return null;
-        }
+        if (!toastContainer) return null;
 
         const toastElement = document.createElement('div');
         toastElement.className = 'toast';
@@ -154,27 +156,29 @@ const NotificationManager = (function() {
     }
 
     function animateToastEntry(toastElement) {
-        gsap.fromTo(
-            toastElement, 
-            { x: 100, opacity: 0 }, 
-            { x: 0, opacity: 1, duration: TOAST_CONFIG.animationDuration, ease: 'back.out(1.5)' }
-        );
+        if (typeof gsap !== 'undefined') {
+            gsap.fromTo(toastElement, { x: 100, opacity: 0 }, { x: 0, opacity: 1, duration: TOAST_CONFIG.animationDuration, ease: 'back.out(1.5)' });
+        }
     }
 
     function scheduleToastRemoval(toastElement) {
         const progressBar = toastElement.querySelector('.toast-progress');
         
-        if (progressBar) {
+        if (typeof gsap !== 'undefined' && progressBar) {
             gsap.to(progressBar, { scaleX: 0, duration: TOAST_CONFIG.duration / 1000, ease: 'linear' });
         }
 
         setTimeout(() => {
-            gsap.to(toastElement, { 
-                x: 100, 
-                opacity: 0, 
-                duration: 0.3, 
-                onComplete: () => toastElement.remove() 
-            });
+            if (typeof gsap !== 'undefined') {
+                gsap.to(toastElement, { 
+                    x: 100, 
+                    opacity: 0, 
+                    duration: 0.3, 
+                    onComplete: () => toastElement.remove() 
+                });
+            } else {
+                toastElement.remove();
+            }
         }, TOAST_CONFIG.duration);
     }
 
@@ -190,9 +194,6 @@ const NotificationManager = (function() {
     return { displayNotification };
 })();
 
-/**
- * Theme Manager
- */
 const ThemeManager = (function() {
     const STORAGE_KEY = 'freshstock-theme';
     const DARK_THEME = 'dark';
@@ -213,9 +214,6 @@ const ThemeManager = (function() {
     return { toggle };
 })();
 
-/**
- * Sidebar Controller
- */
 const SidebarController = (function() {
     function toggle() {
         document.querySelectorAll('.sidebar').forEach(sidebar => {
@@ -226,9 +224,6 @@ const SidebarController = (function() {
     return { toggle };
 })();
 
-/**
- * Product Panel Manager
- */
 const ProductPanelManager = (function() {
     function open() {
         const backdrop = document.getElementById('new-product-backdrop');
@@ -237,7 +232,7 @@ const ProductPanelManager = (function() {
         if (backdrop && panel) {
             backdrop.classList.add('active');
             panel.classList.add('open');
-            loadCategoriesSelect();
+            if (typeof loadCategoriesSelect === 'function') loadCategoriesSelect();
         }
     }
 
@@ -270,10 +265,6 @@ const ProductPanelManager = (function() {
     return { open, close, resetForm };
 })();
 
-/**
- * Event Action Handlers
- * Strategy pattern to avoid chained if/else statements
- */
 const ActionDispatcher = (function() {
     const handlers = {
         'toggle-theme': () => ThemeManager.toggle(),
@@ -297,9 +288,6 @@ const ActionDispatcher = (function() {
     return { execute };
 })();
 
-/**
- * Authentication Handler
- */
 const AuthenticationHandler = (function() {
     function handleLoginSubmit(event) {
         event.preventDefault();
@@ -321,9 +309,6 @@ const AuthenticationHandler = (function() {
     return { handleLoginSubmit };
 })();
 
-/**
- * Utility Functions
- */
 const DateUtilities = {
     formatToLocalString(dateString) {
         if (!dateString) return '-';
@@ -373,9 +358,6 @@ const StatusBadgeGenerator = {
     }
 };
 
-/**
- * Password Visibility Toggle
- */
 const PasswordFieldManager = (function() {
     function toggleVisibility(toggleIcon) {
         const inputField = toggleIcon.previousElementSibling;
@@ -394,9 +376,6 @@ const PasswordFieldManager = (function() {
     return { toggleVisibility };
 })();
 
-/**
- * Global Event Listeners Initialization
- */
 function initializeEventListeners() {
     document.addEventListener('click', (event) => {
         const navigationElement = event.target.closest('[data-navigate]');
@@ -426,5 +405,4 @@ function initializeEventListeners() {
     }
 }
 
-// Application Bootstrap
 document.addEventListener('DOMContentLoaded', initializeEventListeners);

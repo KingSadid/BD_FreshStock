@@ -1,9 +1,4 @@
-/**
- * GSAP Animation System
- * Centralized animation configuration and execution module
- */
-
-const AnimationConfiguration = (function() {
+const AnimationConfiguration = (function () {
     const TIMING_CONSTANTS = Object.freeze({
         FAST: 0.2,
         NORMAL: 0.35,
@@ -15,9 +10,6 @@ const AnimationConfiguration = (function() {
         STAGGER_LOOSE: 0.12,
         DELAY_SHORT: 0.1,
         DELAY_MEDIUM: 0.25,
-        DELAY_LONG: 0.4,
-        NUMBER_ANIMATION_DURATION: 1.5,
-        NUMBER_ANIMATION_DELAY: 0.3,
         SAFETY_TIMEOUT_DURATION: 3000
     });
 
@@ -32,8 +24,7 @@ const AnimationConfiguration = (function() {
         SPRING_BOUNCE: 'back.out(1.4)',
         INTERACTIVE_BOUNCE: 'back.out(1.8)',
         SINE_IN_OUT: 'sine.inOut',
-        POWER2_IN: 'power2.in',
-        POWER3_IN_OUT: 'power3.inOut'
+        POWER2_IN: 'power2.in'
     });
 
     return {
@@ -42,10 +33,7 @@ const AnimationConfiguration = (function() {
     };
 })();
 
-/**
- * DOM Validation Utilities
- */
-const DOMValidator = (function() {
+const DOMValidator = (function () {
     function isValidElement(element) {
         return element instanceof Element;
     }
@@ -62,27 +50,14 @@ const DOMValidator = (function() {
         return true;
     }
 
-    function validateNumericParameter(value, parameterName) {
-        if (typeof value !== 'number' || isNaN(value)) {
-            console.warn(`${parameterName} must be a valid number`);
-            return false;
-        }
-        return true;
-    }
-
     return {
         isValidElement,
         isNonEmptyNodeList,
-        validateStringParameter,
-        validateNumericParameter
+        validateStringParameter
     };
 })();
 
-/**
- * Tracked Elements Registry
- * Prevents duplicate event listener attachment
- */
-const InteractionRegistry = (function() {
+const InteractionRegistry = (function () {
     const registeredElements = new WeakSet();
 
     function isRegistered(element) {
@@ -100,20 +75,15 @@ const InteractionRegistry = (function() {
     return { isRegistered, register };
 })();
 
-/**
- * Animation Builder Functions
- */
-const AnimationBuilders = (function() {
-    const { TIMING, EASING } = AnimationConfiguration;
-
+const AnimationBuilders = (function () {
     function createFadeSlideConfiguration(axis, distance, duration, stagger, ease, delay) {
         const initialProperties = { opacity: 0 };
-        const targetProperties = { 
-            opacity: 1, 
-            duration, 
-            stagger, 
-            ease, 
-            delay 
+        const targetProperties = {
+            opacity: 1,
+            duration,
+            stagger,
+            ease,
+            delay
         };
 
         if (axis === 'vertical') {
@@ -137,110 +107,54 @@ const AnimationBuilders = (function() {
         gsap.fromTo(targetElements, initialProperties, targetProperties);
     }
 
-    function createStaggeredEntrance(targetElements, axis, distance, duration, staggerAmount, delayAmount) {
-        if (!DOMValidator.isNonEmptyNodeList(targetElements)) return;
-
-        const configuration = {
-            duration: duration || TIMING.NORMAL,
-            stagger: staggerAmount || TIMING.STAGGER_NORMAL,
-            ease: EASING.POWER3_OUT
-        };
-
-        const initialState = { opacity: 0 };
-        const finalState = { opacity: 1 };
-
-        if (axis === 'vertical') {
-            initialState.y = distance || 15;
-            finalState.y = 0;
-        } else if (axis === 'horizontal') {
-            initialState.x = distance || -10;
-            finalState.x = 0;
-        }
-
-        gsap.fromTo(targetElements, initialState, { ...finalState, ...configuration, delay: delayAmount });
-    }
-
     return {
         createFadeSlideConfiguration,
-        executeFadeSlideAnimation,
-        createStaggeredEntrance
+        executeFadeSlideAnimation
     };
 })();
 
-/**
- * Interaction Handlers
- */
-const InteractionHandlers = (function() {
-    const { TIMING, EASING } = AnimationConfiguration;
+const InteractionHandlers = (function () {
+    const { EASING } = AnimationConfiguration;
 
     function attachElasticInteraction(interactiveElement) {
-        if (!DOMValidator.isValidElement(interactiveElement)) return;
-        if (InteractionRegistry.isRegistered(interactiveElement)) return;
-        
+        if (!DOMValidator.isValidElement(interactiveElement) || InteractionRegistry.isRegistered(interactiveElement)) return;
+
         InteractionRegistry.register(interactiveElement);
         interactiveElement.classList.add('elastic-interaction-enabled');
 
         interactiveElement.addEventListener('mouseenter', () => {
-            gsap.to(interactiveElement, { 
-                scale: 1.02, 
-                duration: 0.3, 
-                ease: EASING.STRONG_BOUNCE 
-            });
+            gsap.to(interactiveElement, { scale: 1.02, duration: 0.3, ease: EASING.STRONG_BOUNCE });
         });
 
         interactiveElement.addEventListener('mouseleave', () => {
-            gsap.to(interactiveElement, { 
-                scale: 1, 
-                duration: 0.3, 
-                ease: EASING.OUT 
-            });
+            gsap.to(interactiveElement, { scale: 1, duration: 0.3, ease: EASING.OUT });
         });
 
         interactiveElement.addEventListener('mousedown', () => {
-            gsap.to(interactiveElement, { 
-                scale: 0.95, 
-                duration: 0.1, 
-                ease: EASING.POWER2_IN 
-            });
+            gsap.to(interactiveElement, { scale: 0.95, duration: 0.1, ease: EASING.POWER2_IN });
         });
 
         interactiveElement.addEventListener('mouseup', () => {
-            gsap.to(interactiveElement, { 
-                scale: 1.02, 
-                duration: 0.3, 
-                ease: 'back.out(3)' 
-            });
+            gsap.to(interactiveElement, { scale: 1.02, duration: 0.3, ease: 'back.out(3)' });
         });
     }
 
     function attachKeyPerformanceIndicatorIconInteraction(iconElement) {
-        if (!DOMValidator.isValidElement(iconElement)) return;
-        if (InteractionRegistry.isRegistered(iconElement)) return;
+        if (!DOMValidator.isValidElement(iconElement) || InteractionRegistry.isRegistered(iconElement)) return;
 
         InteractionRegistry.register(iconElement);
 
         iconElement.addEventListener('mouseenter', () => {
-            gsap.to(iconElement, { 
-                rotate: 14, 
-                scale: 1.2, 
-                duration: 0.25, 
-                ease: EASING.STRONG_BOUNCE 
-            });
+            gsap.to(iconElement, { rotate: 14, scale: 1.2, duration: 0.25, ease: EASING.STRONG_BOUNCE });
         });
 
         iconElement.addEventListener('mouseleave', () => {
-            gsap.to(iconElement, { 
-                rotate: 0, 
-                scale: 1, 
-                duration: 0.3, 
-                ease: EASING.OUT 
-            });
+            gsap.to(iconElement, { rotate: 0, scale: 1, duration: 0.3, ease: EASING.OUT });
         });
     }
 
     function attachSidebarItemClickAnimation(listItemElement) {
-        if (!DOMValidator.isValidElement(listItemElement)) return;
-        if (InteractionRegistry.isRegistered(listItemElement)) return;
+        if (!DOMValidator.isValidElement(listItemElement) || InteractionRegistry.isRegistered(listItemElement)) return;
 
         InteractionRegistry.register(listItemElement);
 
@@ -249,34 +163,17 @@ const InteractionHandlers = (function() {
             if (!iconElement) return;
 
             const clickAnimationTimeline = gsap.timeline();
-            
             clickAnimationTimeline
-                .to(iconElement, { 
-                    scale: 0.6, 
-                    rotate: -15, 
-                    duration: 0.12, 
-                    ease: EASING.POWER2_IN 
-                })
-                .to(iconElement, { 
-                    scale: 1.2, 
-                    rotate: 5, 
-                    duration: 0.2, 
-                    ease: 'back.out(3)' 
-                })
-                .to(iconElement, { 
-                    scale: 1, 
-                    rotate: 0, 
-                    duration: 0.15, 
-                    ease: EASING.OUT 
-                });
+                .to(iconElement, { scale: 0.6, rotate: -15, duration: 0.12, ease: EASING.POWER2_IN })
+                .to(iconElement, { scale: 1.2, rotate: 5, duration: 0.2, ease: 'back.out(3)' })
+                .to(iconElement, { scale: 1, rotate: 0, duration: 0.15, ease: EASING.OUT });
         });
     }
 
     function initializeNotificationPulseAnimation() {
         if (window.notificationPulseInitialized) return;
-        
         window.notificationPulseInitialized = true;
-        
+
         gsap.to('.notification-indicator-dot', {
             scale: 1.2,
             duration: 0.9,
@@ -287,23 +184,17 @@ const InteractionHandlers = (function() {
     }
 
     function initializeGlobalHoverInteractions() {
-        const primaryButtons = document.querySelectorAll(
-            '.btn-primary, .btn-outline, .btn-danger-outline'
-        );
-        primaryButtons.forEach(button => attachElasticInteraction(button));
+        document.querySelectorAll('.btn-primary, .btn-outline, .btn-danger-outline')
+            .forEach(attachElasticInteraction);
 
-        const cardElements = document.querySelectorAll(
-            '.product-card, .supplier-card, .user-card'
-        );
-        cardElements.forEach(card => attachElasticInteraction(card));
+        document.querySelectorAll('.product-card, .supplier-card, .user-card')
+            .forEach(attachElasticInteraction);
 
-        const kpiIconElements = document.querySelectorAll('.kpi-icon');
-        kpiIconElements.forEach(icon => attachKeyPerformanceIndicatorIconInteraction(icon));
+        document.querySelectorAll('.kpi-icon')
+            .forEach(attachKeyPerformanceIndicatorIconInteraction);
 
-        const sidebarMenuItems = document.querySelectorAll(
-            '.sidebar-menu li:not(.menu-label)'
-        );
-        sidebarMenuItems.forEach(item => attachSidebarItemClickAnimation(item));
+        document.querySelectorAll('.sidebar-menu li:not(.menu-label)')
+            .forEach(attachSidebarItemClickAnimation);
 
         initializeNotificationPulseAnimation();
     }
@@ -316,18 +207,12 @@ const InteractionHandlers = (function() {
     };
 })();
 
-/**
- * Navigation Animation Controller
- */
-const NavigationAnimationController = (function() {
+const NavigationAnimationController = (function () {
     const { TIMING, EASING } = AnimationConfiguration;
 
     function updateSidebarActiveIndicator(targetScreenIdentifier) {
-        const menuItems = document.querySelectorAll('.sidebar-menu li');
-        
-        menuItems.forEach(menuItem => {
-            const navigationTarget = menuItem.getAttribute('data-navigate');
-            const isActive = navigationTarget === targetScreenIdentifier;
+        document.querySelectorAll('.sidebar-menu li').forEach(menuItem => {
+            const isActive = menuItem.getAttribute('data-navigate') === targetScreenIdentifier;
             menuItem.classList.toggle('active', isActive);
         });
     }
@@ -343,65 +228,28 @@ const NavigationAnimationController = (function() {
         nextScreenElement.style.pointerEvents = 'auto';
 
         const contentContainer = nextScreenElement.querySelector('.content-area');
-        if (contentContainer) {
-            contentContainer.scrollTop = 0;
-        }
+        if (contentContainer) contentContainer.scrollTop = 0;
 
-        timelineInstance.to(loadingOverlayElement, { 
-            opacity: 0, 
-            duration: TIMING.NORMAL, 
-            ease: 'none' 
-        }, 0);
-
-        timelineInstance.to(nextScreenElement, { 
-            opacity: 1, 
-            duration: TIMING.NORMAL, 
-            ease: EASING.IN_OUT 
-        }, 0);
+        timelineInstance.to(loadingOverlayElement, { opacity: 0, duration: TIMING.NORMAL, ease: 'none' }, 0);
+        timelineInstance.to(nextScreenElement, { opacity: 1, duration: TIMING.NORMAL, ease: EASING.IN_OUT }, 0);
     }
 
     function executeContentEntranceSequence(timelineInstance, targetScreenElement) {
-        const contentChildren = targetScreenElement.querySelectorAll(
-            '.content-area > *:not(.detail-card)'
-        );
-        const sidebarItems = targetScreenElement.querySelectorAll(
-            '.sidebar-menu li:not(.menu-label)'
-        );
-        const topBarElements = targetScreenElement.querySelectorAll(
-            '.top-bar-left, .top-bar-right'
-        );
+        const entranceConfiguration = { duration: TIMING.NORMAL, stagger: TIMING.STAGGER_TIGHT, ease: EASING.POWER3_OUT };
 
-        const entranceConfiguration = {
-            duration: TIMING.NORMAL,
-            stagger: TIMING.STAGGER_TIGHT,
-            ease: EASING.POWER3_OUT
-        };
-
+        const contentChildren = targetScreenElement.querySelectorAll('.content-area > *:not(.detail-card)');
         if (DOMValidator.isNonEmptyNodeList(contentChildren)) {
-            timelineInstance.fromTo(
-                contentChildren,
-                { opacity: 0, y: 15 },
-                { opacity: 1, y: 0, ...entranceConfiguration },
-                0.05
-            );
+            timelineInstance.fromTo(contentChildren, { opacity: 0, y: 15 }, { opacity: 1, y: 0, ...entranceConfiguration }, 0.05);
         }
 
+        const sidebarItems = targetScreenElement.querySelectorAll('.sidebar-menu li:not(.menu-label)');
         if (DOMValidator.isNonEmptyNodeList(sidebarItems)) {
-            timelineInstance.fromTo(
-                sidebarItems,
-                { opacity: 0, x: -10 },
-                { opacity: 1, x: 0, ...entranceConfiguration },
-                0.05
-            );
+            timelineInstance.fromTo(sidebarItems, { opacity: 0, x: -10 }, { opacity: 1, x: 0, ...entranceConfiguration }, 0.05);
         }
 
+        const topBarElements = targetScreenElement.querySelectorAll('.top-bar-left, .top-bar-right');
         if (DOMValidator.isNonEmptyNodeList(topBarElements)) {
-            timelineInstance.fromTo(
-                topBarElements,
-                { opacity: 0, y: -10 },
-                { opacity: 1, y: 0, ...entranceConfiguration },
-                0.05
-            );
+            timelineInstance.fromTo(topBarElements, { opacity: 0, y: -10 }, { opacity: 1, y: 0, ...entranceConfiguration }, 0.05);
         }
     }
 
@@ -412,24 +260,13 @@ const NavigationAnimationController = (function() {
     };
 })();
 
-/**
- * Navigation State Manager
- */
-const NavigationStateManager = (function() {
+const NavigationStateManager = (function () {
     let isCurrentlyNavigating = false;
     let currentActiveScreen = 'screen-login';
 
-    function isNavigating() {
-        return isCurrentlyNavigating;
-    }
-
-    function setNavigatingStatus(status) {
-        isCurrentlyNavigating = Boolean(status);
-    }
-
-    function getCurrentScreen() {
-        return currentActiveScreen;
-    }
+    function isNavigating() { return isCurrentlyNavigating; }
+    function setNavigatingStatus(status) { isCurrentlyNavigating = Boolean(status); }
+    function getCurrentScreen() { return currentActiveScreen; }
 
     function setCurrentScreen(screenIdentifier) {
         if (DOMValidator.validateStringParameter(screenIdentifier, 'screenIdentifier')) {
@@ -437,175 +274,59 @@ const NavigationStateManager = (function() {
         }
     }
 
-    return {
-        isNavigating,
-        setNavigatingStatus,
-        getCurrentScreen,
-        setCurrentScreen
-    };
+    return { isNavigating, setNavigatingStatus, getCurrentScreen, setCurrentScreen };
 })();
 
-/**
- * Screen-Specific Animation Sequences
- */
-const ScreenAnimationSequences = (function() {
+const ScreenAnimationSequences = (function () {
     const { TIMING, EASING } = AnimationConfiguration;
 
     function executeLoginEntranceSequence() {
-        const leftPanel = document.querySelector('.login-left');
-        const rightPanel = document.querySelector('.login-right');
+        const panels = [
+            document.querySelector('.login-left'),
+            document.querySelector('.login-right')
+        ].filter(Boolean);
 
-        if (!leftPanel || !rightPanel) {
-            console.warn('Login entrance animation: required panels not found');
-            return;
+        if (panels.length) {
+            gsap.fromTo(panels, { opacity: 0 }, { opacity: 1, duration: 0.5, ease: 'power2.inOut' });
         }
 
-        gsap.fromTo(leftPanel, { opacity: 0 }, { 
-            opacity: 1, 
-            duration: 0.5, 
-            ease: 'power2.inOut' 
-        });
-        
-        gsap.fromTo(rightPanel, { opacity: 0 }, { 
-            opacity: 1, 
-            duration: 0.5, 
-            ease: 'power2.inOut' 
-        });
-
-        const heroTextElements = document.querySelectorAll(
-            '.logo-big h1, .hero-subtitle, .hero-features .hf'
-        );
-        gsap.fromTo(
-            heroTextElements,
-            { opacity: 0, x: -20 },
-            { 
-                opacity: 1, 
-                x: 0, 
-                duration: 0.45, 
-                stagger: 0.08, 
-                ease: EASING.OUT, 
-                delay: 0.15 
-            }
-        );
+        const heroTextElements = document.querySelectorAll('.logo-big h1, .hero-subtitle, .hero-features .hf');
+        gsap.fromTo(heroTextElements, { opacity: 0, x: -20 }, { opacity: 1, x: 0, duration: 0.45, stagger: 0.08, ease: EASING.OUT, delay: 0.15 });
 
         const floatingCardElements = document.querySelectorAll('.float-card');
-        gsap.fromTo(
-            floatingCardElements,
-            { scale: 0, opacity: 0 },
-            { 
-                scale: 1, 
-                opacity: 1, 
-                duration: 0.5, 
-                stagger: 0.12, 
-                ease: EASING.STRONG_BOUNCE, 
-                delay: 0.35 
-            }
-        );
+        gsap.fromTo(floatingCardElements, { scale: 0, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.5, stagger: 0.12, ease: EASING.STRONG_BOUNCE, delay: 0.35 });
 
-        const formInputElements = document.querySelectorAll(
-            '.login-form-header, .login-form .form-group, .form-options, ' +
-            '.login-form .btn-primary, .login-divider, .social-login, .login-footer'
-        );
-        gsap.fromTo(
-            formInputElements,
-            { opacity: 0, y: 20 },
-            { 
-                opacity: 1, 
-                y: 0, 
-                duration: 0.45, 
-                stagger: 0.06, 
-                ease: EASING.POWER3_OUT, 
-                delay: 0.2 
-            }
-        );
+        const formInputElements = document.querySelectorAll('.login-form-header, .login-form .form-group, .form-options, .login-form .btn-primary, .login-divider, .social-login, .login-footer');
+        gsap.fromTo(formInputElements, { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.45, stagger: 0.06, ease: EASING.POWER3_OUT, delay: 0.2 });
     }
 
-    function executeDashboardEntranceSequence(containerElement) {
-        if (!DOMValidator.isValidElement(containerElement)) {
-            console.warn('Dashboard animation: valid container required');
-            return;
-        }
-
+    function animateWelcomeBanner(containerElement) {
         const welcomeBanner = containerElement.querySelector('.welcome-banner');
-        if (welcomeBanner) {
-            gsap.fromTo(
-                welcomeBanner,
-                { opacity: 0, scale: 0.97, y: 16 },
-                { 
-                    opacity: 1, 
-                    scale: 1, 
-                    y: 0, 
-                    duration: TIMING.SLOWEST, 
-                    ease: EASING.POWER3_OUT, 
-                    delay: TIMING.DELAY_SHORT 
-                }
-            );
+        if (!welcomeBanner) return;
 
-            const bannerIllustration = welcomeBanner.querySelector('.wb-illustration');
-            if (bannerIllustration) {
-                gsap.fromTo(
-                    bannerIllustration,
-                    { scale: 0.6, opacity: 0, rotate: -20 },
-                    { 
-                        scale: 1, 
-                        opacity: 1, 
-                        rotate: 0, 
-                        duration: TIMING.SLOWEST, 
-                        ease: EASING.ELASTIC_BOUNCE, 
-                        delay: TIMING.DELAY_MEDIUM 
-                    }
-                );
-            }
+        gsap.fromTo(welcomeBanner, { opacity: 0, scale: 0.97, y: 16 }, { opacity: 1, scale: 1, y: 0, duration: TIMING.SLOWEST, ease: EASING.POWER3_OUT, delay: TIMING.DELAY_SHORT });
+
+        const bannerIllustration = welcomeBanner.querySelector('.wb-illustration');
+        if (bannerIllustration) {
+            gsap.fromTo(bannerIllustration, { scale: 0.6, opacity: 0, rotate: -20 }, { scale: 1, opacity: 1, rotate: 0, duration: TIMING.SLOWEST, ease: EASING.ELASTIC_BOUNCE, delay: TIMING.DELAY_MEDIUM });
         }
+    }
 
+    function animateKPICards(containerElement) {
         const kpiCardElements = containerElement.querySelectorAll('.kpi-card');
-        gsap.fromTo(
-            kpiCardElements,
-            { opacity: 0, y: 35, scale: 0.92 },
-            { 
-                opacity: 1, 
-                y: 0, 
-                scale: 1, 
-                duration: TIMING.SLOWER, 
-                stagger: TIMING.STAGGER_LOOSE, 
-                ease: EASING.SOFT_BOUNCE, 
-                delay: TIMING.DELAY_MEDIUM 
-            }
-        );
+        gsap.fromTo(kpiCardElements, { opacity: 0, y: 35, scale: 0.92 }, { opacity: 1, y: 0, scale: 1, duration: TIMING.SLOWER, stagger: TIMING.STAGGER_LOOSE, ease: EASING.SOFT_BOUNCE, delay: TIMING.DELAY_MEDIUM });
 
         const kpiIconElements = containerElement.querySelectorAll('.kpi-icon');
-        gsap.fromTo(
-            kpiIconElements,
-            { scale: 0, opacity: 0, rotate: -30 },
-            { 
-                scale: 1, 
-                opacity: 1, 
-                rotate: 0, 
-                duration: TIMING.NORMAL, 
-                stagger: TIMING.STAGGER_LOOSE, 
-                ease: EASING.STRONG_BOUNCE, 
-                delay: TIMING.SLOW 
-            }
-        );
+        gsap.fromTo(kpiIconElements, { scale: 0, opacity: 0, rotate: -30 }, { scale: 1, opacity: 1, rotate: 0, duration: TIMING.NORMAL, stagger: TIMING.STAGGER_LOOSE, ease: EASING.STRONG_BOUNCE, delay: TIMING.SLOW });
 
         const kpiTrendIndicators = containerElement.querySelectorAll('.kpi-trend');
-        gsap.fromTo(
-            kpiTrendIndicators,
-            { opacity: 0, x: 10 },
-            { 
-                opacity: 1, 
-                x: 0, 
-                duration: TIMING.NORMAL, 
-                stagger: TIMING.STAGGER_NORMAL, 
-                ease: EASING.OUT, 
-                delay: TIMING.SLOWER + TIMING.STAGGER_NORMAL 
-            }
-        );
+        gsap.fromTo(kpiTrendIndicators, { opacity: 0, x: 10 }, { opacity: 1, x: 0, duration: TIMING.NORMAL, stagger: TIMING.STAGGER_NORMAL, ease: EASING.OUT, delay: TIMING.SLOWER + TIMING.STAGGER_NORMAL });
+    }
 
+    function animateDonutCharts(containerElement) {
         const donutChartSegments = containerElement.querySelectorAll('.donut-seg');
         donutChartSegments.forEach((segment, segmentIndex) => {
             let pathLength = 200;
-
             try {
                 if (typeof segment.getTotalLength === 'function') {
                     pathLength = segment.getTotalLength();
@@ -614,262 +335,105 @@ const ScreenAnimationSequences = (function() {
                 console.warn('Donut segment animation: getTotalLength failed', error);
             }
 
-            gsap.set(segment, { 
-                strokeDasharray: pathLength, 
-                strokeDashoffset: pathLength 
-            });
-            
-            gsap.to(segment, {
-                strokeDashoffset: 0,
-                duration: TIMING.SLOWEST,
-                ease: EASING.IN_OUT,
-                delay: TIMING.SLOWER + segmentIndex * TIMING.STAGGER_NORMAL
-            });
+            gsap.set(segment, { strokeDasharray: pathLength, strokeDashoffset: pathLength });
+            gsap.to(segment, { strokeDashoffset: 0, duration: TIMING.SLOWEST, ease: EASING.IN_OUT, delay: TIMING.SLOWER + segmentIndex * TIMING.STAGGER_NORMAL });
         });
+    }
+
+    function executeDashboardEntranceSequence(containerElement) {
+        if (!DOMValidator.isValidElement(containerElement)) return;
+        animateWelcomeBanner(containerElement);
+        animateKPICards(containerElement);
+        animateDonutCharts(containerElement);
     }
 
     function executeDynamicDashboardItemAnimations(containerElement) {
         if (!DOMValidator.isValidElement(containerElement)) return;
 
         const expiryNotificationItems = containerElement.querySelectorAll('.expiry-item');
-        AnimationBuilders.executeFadeSlideAnimation(
-            expiryNotificationItems, 
-            'horizontal', 
-            -20, 
-            TIMING.NORMAL, 
-            TIMING.STAGGER_NORMAL, 
-            EASING.OUT, 
-            TIMING.DELAY_SHORT
-        );
+        AnimationBuilders.executeFadeSlideAnimation(expiryNotificationItems, 'horizontal', -20, TIMING.NORMAL, TIMING.STAGGER_NORMAL, EASING.OUT, TIMING.DELAY_SHORT);
 
         const activityLogItems = containerElement.querySelectorAll('.activity-item');
-        AnimationBuilders.executeFadeSlideAnimation(
-            activityLogItems, 
-            'horizontal', 
-            18, 
-            TIMING.NORMAL, 
-            TIMING.STAGGER_NORMAL, 
-            EASING.OUT, 
-            TIMING.DELAY_SHORT
-        );
+        AnimationBuilders.executeFadeSlideAnimation(activityLogItems, 'horizontal', 18, TIMING.NORMAL, TIMING.STAGGER_NORMAL, EASING.OUT, TIMING.DELAY_SHORT);
     }
 
     function executeProductGridEntranceSequence(containerElement) {
-        if (!DOMValidator.isValidElement(containerElement)) {
-            console.warn('Product grid animation: valid container required');
-            return;
-        }
+        if (!DOMValidator.isValidElement(containerElement)) return;
 
         const productCardElements = containerElement.querySelectorAll('.product-card');
-        gsap.fromTo(
-            productCardElements,
-            { opacity: 0, y: 32, scale: 0.94 },
-            { 
-                opacity: 1, 
-                y: 0, 
-                scale: 1, 
-                duration: TIMING.NORMAL, 
-                stagger: TIMING.STAGGER_NORMAL, 
-                ease: EASING.GENTLE_BOUNCE, 
-                delay: TIMING.DELAY_SHORT 
-            }
-        );
+        gsap.fromTo(productCardElements, { opacity: 0, y: 32, scale: 0.94 }, { opacity: 1, y: 0, scale: 1, duration: TIMING.NORMAL, stagger: TIMING.STAGGER_NORMAL, ease: EASING.GENTLE_BOUNCE, delay: TIMING.DELAY_SHORT });
 
         const categoryChipElements = containerElement.querySelectorAll('.chip');
-        gsap.fromTo(
-            categoryChipElements,
-            { opacity: 0, scale: 0.85 },
-            { 
-                opacity: 1, 
-                scale: 1, 
-                duration: TIMING.FAST, 
-                stagger: TIMING.STAGGER_TIGHT, 
-                ease: EASING.STRONG_BOUNCE, 
-                delay: TIMING.STAGGER_TIGHT 
-            }
-        );
+        gsap.fromTo(categoryChipElements, { opacity: 0, scale: 0.85 }, { opacity: 1, scale: 1, duration: TIMING.FAST, stagger: TIMING.STAGGER_TIGHT, ease: EASING.STRONG_BOUNCE, delay: TIMING.STAGGER_TIGHT });
 
         InteractionHandlers.initializeGlobalHoverInteractions();
     }
 
-    function executeDetailViewEntranceSequence(containerElement) {
-        if (!DOMValidator.isValidElement(containerElement)) {
-            console.warn('Detail view animation: valid container required');
-            return;
-        }
-
+    function animateDetailHero(containerElement) {
         const heroVisualElement = containerElement.querySelector('.detail-header-visual');
         if (heroVisualElement) {
-            gsap.fromTo(
-                heroVisualElement,
-                { opacity: 0, scale: 1.05 },
-                { 
-                    opacity: 1, 
-                    scale: 1, 
-                    duration: TIMING.SLOWEST, 
-                    ease: EASING.OUT, 
-                    delay: TIMING.DELAY_SHORT 
-                }
-            );
+            gsap.fromTo(heroVisualElement, { opacity: 0, scale: 1.05 }, { opacity: 1, scale: 1, duration: TIMING.SLOWEST, ease: EASING.OUT, delay: TIMING.DELAY_SHORT });
         }
+    }
 
+    function animateDetailSidebar(containerElement) {
         const detailSidebar = containerElement.querySelector('.detail-sidebar');
-        if (detailSidebar) {
-            gsap.fromTo(
-                detailSidebar.children,
-                { opacity: 0, x: 20 },
-                { 
-                    opacity: 1, 
-                    x: 0, 
-                    duration: TIMING.NORMAL, 
-                    stagger: TIMING.STAGGER_LOOSE, 
-                    ease: EASING.OUT, 
-                    delay: TIMING.DELAY_MEDIUM 
-                }
-            );
+        if (detailSidebar && detailSidebar.children.length > 0) {
+            gsap.fromTo(detailSidebar.children, { opacity: 0, x: 20 }, { opacity: 1, x: 0, duration: TIMING.NORMAL, stagger: TIMING.STAGGER_LOOSE, ease: EASING.OUT, delay: TIMING.DELAY_MEDIUM });
         }
+    }
+
+    function executeDetailViewEntranceSequence(containerElement) {
+        if (!DOMValidator.isValidElement(containerElement)) return;
+
+        animateDetailHero(containerElement);
+        animateDetailSidebar(containerElement);
 
         const dataTableRows = containerElement.querySelectorAll('.data-table tbody tr');
-        AnimationBuilders.executeFadeSlideAnimation(
-            dataTableRows, 
-            'horizontal', 
-            -20, 
-            TIMING.NORMAL, 
-            TIMING.STAGGER_TIGHT, 
-            EASING.OUT, 
-            TIMING.DELAY_SHORT
-        );
+        AnimationBuilders.executeFadeSlideAnimation(dataTableRows, 'horizontal', -20, TIMING.NORMAL, TIMING.STAGGER_TIGHT, EASING.OUT, TIMING.DELAY_SHORT);
     }
 
     function executeAlertPanelEntranceSequence(containerElement) {
-        if (!DOMValidator.isValidElement(containerElement)) {
-            console.warn('Alert panel animation: valid container required');
-            return;
-        }
+        if (!DOMValidator.isValidElement(containerElement)) return;
 
         const summaryCardElements = containerElement.querySelectorAll('.alert-sum-card');
-        gsap.fromTo(
-            summaryCardElements,
-            { opacity: 0, scale: 0.88, y: 16 },
-            { 
-                opacity: 1, 
-                scale: 1, 
-                y: 0, 
-                duration: TIMING.NORMAL, 
-                stagger: TIMING.STAGGER_NORMAL, 
-                ease: EASING.INTERACTIVE_BOUNCE, 
-                delay: TIMING.DELAY_SHORT 
-            }
-        );
+        gsap.fromTo(summaryCardElements, { opacity: 0, scale: 0.88, y: 16 }, { opacity: 1, scale: 1, y: 0, duration: TIMING.NORMAL, stagger: TIMING.STAGGER_NORMAL, ease: EASING.INTERACTIVE_BOUNCE, delay: TIMING.DELAY_SHORT });
 
         const alertNotificationItems = containerElement.querySelectorAll('.alert-item');
-        gsap.fromTo(
-            alertNotificationItems,
-            { opacity: 0, x: -36, scale: 0.98 },
-            { 
-                opacity: 1, 
-                x: 0, 
-                scale: 1, 
-                duration: TIMING.NORMAL, 
-                stagger: TIMING.STAGGER_NORMAL, 
-                ease: EASING.POWER3_OUT, 
-                delay: TIMING.SLOW 
-            }
-        );
+        gsap.fromTo(alertNotificationItems, { opacity: 0, x: -36, scale: 0.98 }, { opacity: 1, x: 0, scale: 1, duration: TIMING.NORMAL, stagger: TIMING.STAGGER_NORMAL, ease: EASING.POWER3_OUT, delay: TIMING.SLOW });
 
         InteractionHandlers.initializeGlobalHoverInteractions();
     }
 
     function executePepsInformationBannerAnimation(containerElement) {
-        if (!DOMValidator.isValidElement(containerElement)) {
-            console.warn('PEPS banner animation: valid container required');
-            return;
-        }
+        if (!DOMValidator.isValidElement(containerElement)) return;
 
         const pepsBanner = containerElement.querySelector('.peps-info-banner');
         if (!pepsBanner) return;
 
-        gsap.fromTo(
-            pepsBanner,
-            { opacity: 0, y: -16, scale: 0.97 },
-            { 
-                opacity: 1, 
-                y: 0, 
-                scale: 1, 
-                duration: TIMING.NORMAL, 
-                ease: EASING.OUT, 
-                delay: TIMING.DELAY_SHORT 
-            }
-        );
+        gsap.fromTo(pepsBanner, { opacity: 0, y: -16, scale: 0.97 }, { opacity: 1, y: 0, scale: 1, duration: TIMING.NORMAL, ease: EASING.OUT, delay: TIMING.DELAY_SHORT });
     }
 
     function executeScannerInterfaceEntranceSequence(containerElement) {
-        if (!DOMValidator.isValidElement(containerElement)) {
-            console.warn('Scanner animation: valid container required');
-            return;
-        }
+        if (!DOMValidator.isValidElement(containerElement)) return;
 
         const scannerViewport = containerElement.querySelector('.scanner-viewport');
         if (scannerViewport) {
-            gsap.fromTo(
-                scannerViewport,
-                { opacity: 0, scale: 0.9 },
-                { 
-                    opacity: 1, 
-                    scale: 1, 
-                    duration: TIMING.SLOWER, 
-                    ease: EASING.SPRING_BOUNCE, 
-                    delay: TIMING.DELAY_MEDIUM 
-                }
-            );
+            gsap.fromTo(scannerViewport, { opacity: 0, scale: 0.9 }, { opacity: 1, scale: 1, duration: TIMING.SLOWER, ease: EASING.SPRING_BOUNCE, delay: TIMING.DELAY_MEDIUM });
         }
 
         const lotFormGroups = containerElement.querySelectorAll('.lot-form .form-group');
-        AnimationBuilders.executeFadeSlideAnimation(
-            lotFormGroups, 
-            'vertical', 
-            14, 
-            TIMING.NORMAL, 
-            TIMING.STAGGER_TIGHT, 
-            EASING.OUT, 
-            TIMING.SLOW
-        );
+        AnimationBuilders.executeFadeSlideAnimation(lotFormGroups, 'vertical', 14, TIMING.NORMAL, TIMING.STAGGER_TIGHT, EASING.OUT, TIMING.SLOW);
     }
 
     function executeSupplierDirectoryEntranceSequence(containerElement) {
-        if (!DOMValidator.isValidElement(containerElement)) {
-            console.warn('Supplier animation: valid container required');
-            return;
-        }
+        if (!DOMValidator.isValidElement(containerElement)) return;
 
         const supplierCardElements = containerElement.querySelectorAll('.supplier-card');
-        gsap.fromTo(
-            supplierCardElements,
-            { opacity: 0, scale: 0.9, y: 24 },
-            { 
-                opacity: 1, 
-                scale: 1, 
-                y: 0, 
-                duration: TIMING.SLOWER, 
-                stagger: TIMING.STAGGER_LOOSE, 
-                ease: EASING.SOFT_BOUNCE, 
-                delay: TIMING.DELAY_SHORT 
-            }
-        );
+        gsap.fromTo(supplierCardElements, { opacity: 0, scale: 0.9, y: 24 }, { opacity: 1, scale: 1, y: 0, duration: TIMING.SLOWER, stagger: TIMING.STAGGER_LOOSE, ease: EASING.SOFT_BOUNCE, delay: TIMING.DELAY_SHORT });
 
         const supplierAvatarElements = containerElement.querySelectorAll('.sc-avatar');
-        gsap.fromTo(
-            supplierAvatarElements,
-            { scale: 0.5, opacity: 0 },
-            { 
-                scale: 1, 
-                opacity: 1, 
-                duration: TIMING.NORMAL, 
-                stagger: TIMING.STAGGER_LOOSE, 
-                ease: EASING.STRONG_BOUNCE, 
-                delay: TIMING.SLOW 
-            }
-        );
+        gsap.fromTo(supplierAvatarElements, { scale: 0.5, opacity: 0 }, { scale: 1, opacity: 1, duration: TIMING.NORMAL, stagger: TIMING.STAGGER_LOOSE, ease: EASING.STRONG_BOUNCE, delay: TIMING.SLOW });
 
         InteractionHandlers.initializeGlobalHoverInteractions();
     }
@@ -887,10 +451,7 @@ const ScreenAnimationSequences = (function() {
     };
 })();
 
-/**
- * Main Navigation Controller
- */
-const NavigationController = (function() {
+const NavigationController = (function () {
     const { TIMING } = AnimationConfiguration;
 
     function validateNavigationPrerequisites(screenIdentifier) {
@@ -916,17 +477,11 @@ const NavigationController = (function() {
             return { valid: false, reason: 'Loading overlay element not found' };
         }
 
-        return { 
-            valid: true, 
-            targetScreen: targetScreenElement, 
-            loadingOverlay: loadingOverlay 
-        };
+        return { valid: true, targetScreen: targetScreenElement, loadingOverlay: loadingOverlay };
     }
 
     function captureFlipState(sourceElement) {
-        if (!sourceElement || !sourceElement.classList.contains('product-card')) {
-            return null;
-        }
+        if (!sourceElement || !sourceElement.classList.contains('product-card')) return null;
 
         try {
             return Flip.getState(sourceElement);
@@ -975,10 +530,7 @@ const NavigationController = (function() {
 
     function performScreenNavigation(screenIdentifier, sourceInteractionElement) {
         const validation = validateNavigationPrerequisites(screenIdentifier);
-        if (!validation.valid) {
-            console.warn(`Navigation blocked: ${validation.reason}`);
-            return;
-        }
+        if (!validation.valid) return;
 
         const currentScreenElement = document.getElementById(NavigationStateManager.getCurrentScreen());
         const { targetScreen: nextScreenElement, loadingOverlay: loadingOverlayElement } = validation;
@@ -993,11 +545,7 @@ const NavigationController = (function() {
         gsap.set(loadingOverlayElement, { opacity: 1, display: 'flex' });
         gsap.set(nextScreenElement, { opacity: 0 });
 
-        const safetyTimeout = createSafetyTimeout(
-            nextScreenElement, 
-            loadingOverlayElement, 
-            currentScreenElement
-        );
+        const safetyTimeout = createSafetyTimeout(nextScreenElement, loadingOverlayElement, currentScreenElement);
 
         const navigationTimeline = gsap.timeline({
             onComplete: () => {
@@ -1014,13 +562,7 @@ const NavigationController = (function() {
         });
 
         navigationTimeline.add(() => {
-            NavigationAnimationController.executeScreenTransition(
-                navigationTimeline, 
-                currentScreenElement, 
-                nextScreenElement, 
-                loadingOverlayElement
-            );
-            
+            NavigationAnimationController.executeScreenTransition(navigationTimeline, currentScreenElement, nextScreenElement, loadingOverlayElement);
             NavigationStateManager.setCurrentScreen(screenIdentifier);
 
             if (typeof window.triggerDataLoad === 'function') {
@@ -1037,20 +579,14 @@ const NavigationController = (function() {
             return;
         }
 
-        NavigationAnimationController.executeContentEntranceSequence(
-            navigationTimeline, 
-            nextScreenElement
-        );
+        NavigationAnimationController.executeContentEntranceSequence(navigationTimeline, nextScreenElement);
     }
 
     return { performScreenNavigation };
 })();
 
-/**
- * Public API Export
- */
-window.GSAPIntegration = (function() {
-    const publicInterface = {
+window.GSAPIntegration = (function () {
+    return {
         initializeGlobalHoverInteractions: InteractionHandlers.initializeGlobalHoverInteractions,
         navigateTo: NavigationController.performScreenNavigation,
         applyElasticInteraction: InteractionHandlers.attachElasticInteraction,
@@ -1063,10 +599,10 @@ window.GSAPIntegration = (function() {
         animateTableRows: (container) => {
             const rows = container.querySelectorAll('.data-table tbody tr');
             AnimationBuilders.executeFadeSlideAnimation(
-                rows, 'horizontal', -20, 
-                AnimationConfiguration.TIMING.NORMAL, 
-                AnimationConfiguration.TIMING.STAGGER_TIGHT, 
-                AnimationConfiguration.EASING.OUT, 
+                rows, 'horizontal', -20,
+                AnimationConfiguration.TIMING.NORMAL,
+                AnimationConfiguration.TIMING.STAGGER_TIGHT,
+                AnimationConfiguration.EASING.OUT,
                 AnimationConfiguration.TIMING.DELAY_SHORT
             );
         },
@@ -1074,6 +610,4 @@ window.GSAPIntegration = (function() {
         animateScannerEntrance: ScreenAnimationSequences.executeScannerInterfaceEntranceSequence,
         animateSupplierCards: ScreenAnimationSequences.executeSupplierDirectoryEntranceSequence
     };
-
-    return publicInterface;
 })();
