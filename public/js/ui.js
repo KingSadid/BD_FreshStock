@@ -1,4 +1,3 @@
-// Estado de la aplicación
 const AppState = {
     currentScreen: 'screen-login',
     isNavigating: false,
@@ -8,7 +7,6 @@ const AppState = {
     categories: []
 };
 
-// Navegación entre pantallas
 function navigateTo(screenId) {
     if (AppState.isNavigating || screenId === AppState.currentScreen) return;
     AppState.isNavigating = true;
@@ -19,14 +17,12 @@ function navigateTo(screenId) {
 
     if (!next) { AppState.isNavigating = false; return; }
 
-    // Actualizar menú lateral
     document.querySelectorAll('.sidebar-menu li').forEach(li => {
         const nav = li.getAttribute('data-navigate');
         if (nav === screenId) li.classList.add('active');
         else li.classList.remove('active');
     });
 
-    // Mostrar loading
     gsap.set(loading, { opacity: 1, display: 'flex' });
 
     setTimeout(() => {
@@ -46,7 +42,6 @@ function navigateTo(screenId) {
         AppState.currentScreen = screenId;
         AppState.isNavigating = false;
 
-        // Disparar evento de carga de screen
         if (screenId === 'screen-dashboard') loadDashboard();
         if (screenId === 'screen-products') loadProducts();
         if (screenId === 'screen-lots') loadLots();
@@ -57,7 +52,6 @@ function navigateTo(screenId) {
     }, 300);
 }
 
-// Toast notifications
 function showToast(title, message, type = 'success') {
     const container = document.getElementById('toast-container');
     const toast = document.createElement('div');
@@ -96,7 +90,6 @@ function showToast(title, message, type = 'success') {
     }, 3000);
 }
 
-// Toggle tema
 function toggleTheme() {
     const html = document.documentElement;
     const isDark = html.getAttribute('data-theme') === 'dark';
@@ -110,12 +103,10 @@ function toggleTheme() {
     }
 }
 
-// Sidebar toggle
 function toggleSidebar() {
     document.querySelectorAll('.sidebar').forEach(s => s.classList.toggle('collapsed'));
 }
 
-// Panel de nuevo producto
 function openNewProductPanel() {
     document.getElementById('new-product-backdrop').classList.add('active');
     document.getElementById('new-product-panel').classList.add('open');
@@ -127,9 +118,7 @@ function closeNewProductPanel() {
     document.getElementById('new-product-panel').classList.remove('open');
 }
 
-// Event listeners globales
 document.addEventListener('DOMContentLoaded', () => {
-    // Navegación
     document.addEventListener('click', (e) => {
         const nav = e.target.closest('[data-navigate]');
         if (nav) {
@@ -156,7 +145,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // Password toggle
     document.querySelectorAll('.toggle-pass').forEach(icon => {
         icon.addEventListener('click', function () {
             const input = this.previousElementSibling;
@@ -170,7 +158,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // Login form
     const loginForm = document.getElementById('login-form');
     if (loginForm) {
         loginForm.addEventListener('submit', (e) => {
@@ -187,7 +174,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-// Helpers
 function formatDate(dateStr) {
     if (!dateStr) return '-';
     const d = new Date(dateStr);
