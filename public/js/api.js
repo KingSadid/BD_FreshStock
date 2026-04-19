@@ -6,7 +6,6 @@ const api = {
   getMovementStats: () => fetch(`${API_BASE}/api/dashboard/movement-stats`).then(r => r.json()),
   getCategoryStats: () => fetch(`${API_BASE}/api/dashboard/category-stats`).then(r => r.json()),
 
-  // Productos
   getProducts: () => fetch(`${API_BASE}/api/products`).then(r => r.json()),
   getProduct: (sku) => fetch(`${API_BASE}/api/products/${sku}`).then(r => r.json()),
   createProduct: (data) => fetch(`${API_BASE}/api/products`, {
@@ -23,7 +22,6 @@ const api = {
     method: 'DELETE'
   }),
 
-  // Lotes
   getBatches: (status = '') => fetch(`${API_BASE}/api/batches${status ? '?status=' + status : ''}`).then(r => r.json()),
   getExpiringBatches: (days = 7) => fetch(`${API_BASE}/api/batches/expiring?days=${days}`).then(r => r.json()),
   createBatch: (data) => fetch(`${API_BASE}/api/batches`, {
@@ -36,12 +34,9 @@ const api = {
     method: 'DELETE'
   }),
 
-  // Proveedores
   getSuppliers: () => fetch(`${API_BASE}/api/suppliers`).then(r => r.json()),
 
-  // Categorías
   getCategories: () => fetch(`${API_BASE}/api/categories`).then(r => r.json()),
 
-  // Movimientos
   getRecentMovements: () => fetch(`${API_BASE}/api/movements/recent`).then(r => r.json())
 };
