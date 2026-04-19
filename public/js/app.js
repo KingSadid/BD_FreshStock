@@ -1,14 +1,13 @@
-// Cargar datos del dashboard
 async function loadDashboard() {
   try {
-    // KPIs
+    
     const kpis = await api.getKPIs();
     document.getElementById('kpi-products').textContent = kpis.active_products;
     document.getElementById('kpi-batches').textContent = kpis.total_batches;
     document.getElementById('kpi-expiring').textContent = kpis.expiring_soon;
     document.getElementById('kpi-critical').textContent = kpis.critical_stock;
 
-    // Actualizar badges
+   
     document.querySelectorAll('[id^="nav-badge-products"]').forEach(b => b.textContent = kpis.active_products);
     document.querySelectorAll('[id^="nav-badge-alerts"]').forEach(b => b.textContent = kpis.expiring_soon);
     document.getElementById('banner-alerts').textContent = kpis.expiring_soon + ' alertas';
@@ -16,7 +15,7 @@ async function loadDashboard() {
     document.getElementById('login-stat-products').textContent = kpis.active_products + ' productos';
     document.getElementById('login-stat-alerts').textContent = kpis.expiring_soon + ' alertas';
 
-    // Próximos a vencer
+    
     const expiring = await api.getExpiringBatches(7);
     const expiryList = document.getElementById('dashboard-expiry-list');
     expiryList.innerHTML = expiring.map(batch => {
@@ -54,7 +53,6 @@ async function loadDashboard() {
       `;
     }).join('');
 
-    // Cargar estadísticas para gráficos
     const [movementStats, categoryStats] = await Promise.all([
       api.getMovementStats(),
       api.getCategoryStats()
@@ -63,7 +61,6 @@ async function loadDashboard() {
     renderMovementChart(movementStats);
     renderCategoryChart(categoryStats);
 
-    // Animar números
     animateValue('kpi-products', 0, kpis.active_products, 1000);
     animateValue('kpi-batches', 0, kpis.total_batches, 1000);
 
@@ -89,7 +86,6 @@ function renderMovementChart(data) {
       });
   }
 
-  // Mapear datos a los últimos 7 días
   const plotData = last7Days.map(d => {
       const dayData = data.find(item => item.date.startsWith(d.dateStr)) || { entries: 0, exits: 0 };
       return { day: d.dayName, entries: dayData.entries, exits: dayData.exits };
@@ -177,7 +173,6 @@ function renderCategoryChart(data) {
   const circumference = 2 * Math.PI * radius;
   let offset = 0;
 
-  // Clear existing segments (except background circle and texts)
   const segments = svg.querySelectorAll('.donut-seg');
   segments.forEach(s => s.remove());
 
@@ -201,18 +196,15 @@ function renderCategoryChart(data) {
       offset += strokeDash;
   });
   
-  // Re-append text to keep it on top
   const texts = svg.querySelectorAll('text');
   texts.forEach(t => svg.appendChild(t));
 
-  // Trigger GSAP animation if available
   if (window.GSAPIntegration) {
       window.GSAPIntegration.animateDashboardExt(document.getElementById('screen-dashboard'));
   }
 }
 
 
-// Cargar productos
 async function loadProducts() {
   try {
     const [products, categories] = await Promise.all([
@@ -253,7 +245,6 @@ async function loadProducts() {
       `;
     }).join('');
 
-    // Filtros de categoría
     const filterContainer = document.getElementById('category-filters');
     filterContainer.innerHTML = `
       <button class="chip active" onclick="filterProducts('all')">Todos <span class="chip-count">${products.length}</span></button>
@@ -268,7 +259,6 @@ async function loadProducts() {
 }
 
 function filterProducts(category) {
-  // Implementar filtrado visual aquí
   document.querySelectorAll('#category-filters .chip').forEach(c => c.classList.remove('active'));
   event.target.closest('.chip').classList.add('active');
 }
@@ -285,7 +275,6 @@ async function viewProductDetail(sku) {
     document.getElementById('detail-price').textContent = 'Precio: $' + parseFloat(product.sale_price).toLocaleString();
     document.getElementById('detail-breadcrumb').textContent = 'Productos / ' + product.name;
 
-    // Cargar lotes del producto
     const batches = await api.getBatches();
     const productBatches = batches.filter(b => b.sku === sku);
 
@@ -307,7 +296,6 @@ async function viewProductDetail(sku) {
       `;
     }).join('') || '<tr><td colspan="6" style="text-align:center">No hay lotes activos</td></tr>';
 
-    // Botones de acción
     document.getElementById('btn-edit-product').onclick = () => editProduct(product);
     document.getElementById('btn-delete-product').onclick = () => deleteProductConfirm(product.sku);
 
@@ -317,7 +305,6 @@ async function viewProductDetail(sku) {
   }
 }
 
-// Cargar lotes
 async function loadLots() {
   try {
     const batches = await api.getBatches();
@@ -359,7 +346,6 @@ async function loadLots() {
   }
 }
 
-// Preparar formulario de lotes
 async function prepareLotForm() {
   try {
     const [products, suppliers] = await Promise.all([
@@ -376,7 +362,6 @@ async function prepareLotForm() {
     supplierSelect.innerHTML = '<option value="">Seleccionar proveedor...</option>' +
       suppliers.map(s => `<option value="${s.supplier_id}">${s.name}</option>`).join('');
 
-    // Setear fecha de hoy
     const today = new Date().toISOString().split('T')[0];
     document.querySelector('input[name="entry_date"]').value = today;
 
@@ -385,7 +370,6 @@ async function prepareLotForm() {
   }
 }
 
-// Crear lote
 document.addEventListener('DOMContentLoaded', () => {
   const lotForm = document.getElementById('lot-form');
   if (lotForm) {
@@ -394,7 +378,6 @@ document.addEventListener('DOMContentLoaded', () => {
       const formData = new FormData(lotForm);
       const data = Object.fromEntries(formData);
 
-      // Convertir a números donde sea necesario
       data.supplier_id = data.supplier_id || null;
       data.initial_quantity = parseFloat(data.initial_quantity);
       data.unit_cost = parseFloat(data.unit_cost) || 0;
@@ -415,7 +398,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Crear producto
   const productForm = document.getElementById('new-product-form');
   if (productForm) {
     productForm.addEventListener('submit', async (e) => {
@@ -451,7 +433,6 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 });
 
-// Cargar alertas
 async function loadAlerts() {
   try {
     const expiring = await api.getExpiringBatches(30);
@@ -506,7 +487,6 @@ async function loadAlerts() {
   }
 }
 
-// Cargar proveedores
 async function loadSuppliers() {
   try {
     const suppliers = await api.getSuppliers();
@@ -538,7 +518,6 @@ async function loadSuppliers() {
   }
 }
 
-// Cargar categorías en select
 async function loadCategoriesSelect() {
   try {
     const categories = await api.getCategories();
@@ -552,15 +531,13 @@ async function loadCategoriesSelect() {
   }
 }
 
-// CRUD: Editar producto
 function editProduct(product) {
   const form = document.getElementById('new-product-form');
   document.getElementById('product-panel-title').innerHTML = `<i class="fas fa-edit"></i> Editar Producto: ${product.sku}`;
   document.getElementById('product-form-mode').value = 'edit';
   
-  // Llenar campos
   form.sku.value = product.sku;
-  form.sku.readOnly = true; // No permitir cambiar SKU en edición
+  form.sku.readOnly = true; 
   form.name.value = product.name;
   form.description.value = product.description || '';
   form.category_id.value = product.category_id || '';
@@ -573,7 +550,6 @@ function editProduct(product) {
   openNewProductPanel();
 }
 
-// CRUD: Eliminar producto
 async function deleteProductConfirm(sku) {
   if (confirm(`¿Estás seguro de eliminar el producto ${sku}? This cannot be undone.`)) {
     try {
@@ -592,7 +568,6 @@ async function deleteProductConfirm(sku) {
   }
 }
 
-// Animación de números
 function animateValue(id, start, end, duration) {
   const obj = document.getElementById(id);
   if (!obj) return;
@@ -608,7 +583,6 @@ function animateValue(id, start, end, duration) {
   window.requestAnimationFrame(step);
 }
 
-// Registrar salida (simulado)
 function registerOutput(batchId) {
   const quantity = prompt('Ingrese cantidad a retirar:');
   if (quantity && !isNaN(quantity)) {
@@ -617,7 +591,6 @@ function registerOutput(batchId) {
   }
 }
 
-// Eliminar lote
 async function deleteBatchConfirm(id) {
   if (confirm('¿Estás seguro de eliminar este lote permanentemente? Esta acción eliminará también el historial de movimientos asociado.')) {
     try {

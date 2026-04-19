@@ -1,7 +1,6 @@
 const API_BASE = '';
 
 const api = {
-  // Dashboard
   getKPIs: () => fetch(`${API_BASE}/api/dashboard/kpis`).then(r => r.json()),
   getMovementStats: () => fetch(`${API_BASE}/api/dashboard/movement-stats`).then(r => r.json()),
   getCategoryStats: () => fetch(`${API_BASE}/api/dashboard/category-stats`).then(r => r.json()),
