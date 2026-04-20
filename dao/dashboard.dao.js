@@ -21,12 +21,12 @@ const getKPIs = async (req, res) => {
     const [critical] = await db.query(`
       SELECT COUNT(*) as count
       FROM (
-        SELECT p.sku, p.min_stock, COALESCE(SUM(b.current_quantity), 0) as stock
-        FROM product p
-        LEFT JOIN batch b ON p.sku = b.product_sku AND b.status = 'active'
-        WHERE p.is_active = true
-        GROUP BY p.sku
-        HAVING stock < p.min_stock
+        SELECT product.sku, product.min_stock, COALESCE(SUM(batch.current_quantity), 0) as stock
+        FROM product
+        LEFT JOIN batch ON product.sku = batch.product_sku AND batch.status = 'active'
+        WHERE product.is_active = true
+        GROUP BY product.sku
+        HAVING stock < product.min_stock
       ) as low_stock
     `);
 
@@ -46,10 +46,10 @@ const getMovementStats = async (req, res) => {
     const stats = await db.query(`
       SELECT 
         DATE(datetime) as date,
-        SUM(CASE WHEN mt.sign = '+' THEN quantity ELSE 0 END) as entries,
-        SUM(CASE WHEN mt.sign = '-' THEN quantity ELSE 0 END) as exits
-      FROM movement m
-      JOIN movement_type mt ON m.movement_type_id = mt.movement_type_id
+        SUM(CASE WHEN movement_type.sign = '+' THEN quantity ELSE 0 END) as entries,
+        SUM(CASE WHEN movement_type.sign = '-' THEN quantity ELSE 0 END) as exits
+      FROM movement
+      JOIN movement_type ON movement.movement_type_id = movement_type.movement_type_id
       WHERE datetime >= DATE_SUB(CURDATE(), INTERVAL 6 DAY)
       GROUP BY DATE(datetime)
       ORDER BY DATE(datetime) ASC
@@ -63,11 +63,11 @@ const getMovementStats = async (req, res) => {
 const getCategoryStats = async (req, res) => {
   try {
     const stats = await db.query(`
-      SELECT c.name, COUNT(p.sku) as product_count
-      FROM category c
-      LEFT JOIN product p ON c.category_id = p.category_id
-      WHERE c.is_active = true
-      GROUP BY c.category_id, c.name
+      SELECT category.name, COUNT(product.sku) as product_count
+      FROM category
+      LEFT JOIN product ON category.category_id = product.category_id
+      WHERE category.is_active = true
+      GROUP BY category.category_id, category.name
     `);
     res.json(stats[0]);
   } catch (err) {

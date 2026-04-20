@@ -5,18 +5,18 @@ const getAll = async (req, res) => {
     const { status = 'active' } = req.query;
     const [rows] = await db.query(`
       SELECT 
-        b.batch_id, b.batch_code, b.entry_date, b.expiry_date,
-        b.initial_quantity, b.current_quantity, b.unit_cost,
-        b.warehouse_location, b.status, b.notes,
-        p.sku, p.name as product_name, p.sale_price,
-        u.abbreviation as unit_abbr,
-        s.name as supplier_name
-      FROM batch b
-      JOIN product p ON b.product_sku = p.sku
-      LEFT JOIN unit_of_measure u ON p.unit_id = u.unit_id
-      LEFT JOIN supplier s ON b.supplier_id = s.supplier_id
-      WHERE (? = 'all' OR b.status = ?)
-      ORDER BY b.entry_date ASC, b.batch_id ASC
+        batch.batch_id, batch.batch_code, batch.entry_date, batch.expiry_date,
+        batch.initial_quantity, batch.current_quantity, batch.unit_cost,
+        batch.warehouse_location, batch.status, batch.notes,
+        product.sku, product.name as product_name, product.sale_price,
+        unit_of_measure.abbreviation as unit_abbr,
+        supplier.name as supplier_name
+      FROM batch
+      JOIN product ON batch.product_sku = product.sku
+      LEFT JOIN unit_of_measure ON product.unit_id = unit_of_measure.unit_id
+      LEFT JOIN supplier ON batch.supplier_id = supplier.supplier_id
+      WHERE (? = 'all' OR batch.status = ?)
+      ORDER BY batch.entry_date ASC, batch.batch_id ASC
     `, [status, status]);
     res.json(rows);
   } catch (err) {
@@ -28,11 +28,11 @@ const getByProduct = async (req, res) => {
   try {
     const [rows] = await db.query(`
       SELECT 
-        b.*, s.name as supplier_name
-      FROM batch b
-      LEFT JOIN supplier s ON b.supplier_id = s.supplier_id
-      WHERE b.product_sku = ? AND b.status = 'active'
-      ORDER BY b.entry_date ASC
+        batch.*, supplier.name as supplier_name
+      FROM batch
+      LEFT JOIN supplier ON batch.supplier_id = supplier.supplier_id
+      WHERE batch.product_sku = ? AND batch.status = 'active'
+      ORDER BY batch.entry_date ASC
     `, [req.params.sku]);
     res.json(rows);
   } catch (err) {
@@ -135,15 +135,15 @@ const getExpiringBatches = async (req, res) => {
     const { days = 7 } = req.query;
     const [rows] = await db.query(`
       SELECT 
-        b.batch_id, b.batch_code, b.expiry_date, b.current_quantity,
-        p.sku, p.name as product_name,
-        DATEDIFF(b.expiry_date, CURDATE()) as days_remaining
-      FROM batch b
-      JOIN product p ON b.product_sku = p.sku
-      WHERE b.status = 'active' 
-        AND b.current_quantity > 0
-        AND b.expiry_date <= DATE_ADD(CURDATE(), INTERVAL ? DAY)
-      ORDER BY b.expiry_date ASC
+        batch.batch_id, batch.batch_code, batch.expiry_date, batch.current_quantity,
+        product.sku, product.name as product_name,
+        DATEDIFF(batch.expiry_date, CURDATE()) as days_remaining
+      FROM batch
+      JOIN product ON batch.product_sku = product.sku
+      WHERE batch.status = 'active' 
+        AND batch.current_quantity > 0
+        AND batch.expiry_date <= DATE_ADD(CURDATE(), INTERVAL ? DAY)
+      ORDER BY batch.expiry_date ASC
     `, [days]);
     res.json(rows);
   } catch (err) {

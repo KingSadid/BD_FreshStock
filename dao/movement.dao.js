@@ -4,17 +4,17 @@ const getRecent = async (req, res) => {
   try {
     const [rows] = await db.query(`
       SELECT 
-        m.movement_id, m.datetime, m.quantity, m.reason,
-        mt.name as movement_type, mt.sign,
-        b.batch_code,
-        p.name as product_name, p.sku,
-        u.name as user_name
-      FROM movement m
-      JOIN movement_type mt ON m.movement_type_id = mt.movement_type_id
-      JOIN batch b ON m.batch_id = b.batch_id
-      JOIN product p ON b.product_sku = p.sku
-      JOIN user u ON m.user_id = u.user_id
-      ORDER BY m.datetime DESC
+        movement.movement_id, movement.datetime, movement.quantity, movement.reason,
+        movement_type.name as movement_type, movement_type.sign,
+        batch.batch_code,
+        product.name as product_name, product.sku,
+        user.name as user_name
+      FROM movement
+      JOIN movement_type ON movement.movement_type_id = movement_type.movement_type_id
+      JOIN batch ON movement.batch_id = batch.batch_id
+      JOIN product ON batch.product_sku = product.sku
+      JOIN user ON movement.user_id = user.user_id
+      ORDER BY movement.datetime DESC
       LIMIT 50
     `);
     res.json(rows);
@@ -27,14 +27,14 @@ const getStats = async (req, res) => {
   try {
     const [rows] = await db.query(`
       SELECT 
-        mt.name as type,
-        SUM(CASE WHEN mt.sign = '+' THEN m.quantity ELSE 0 END) as total_in,
-        SUM(CASE WHEN mt.sign = '-' THEN m.quantity ELSE 0 END) as total_out,
+        movement_type.name as type,
+        SUM(CASE WHEN movement_type.sign = '+' THEN movement.quantity ELSE 0 END) as total_in,
+        SUM(CASE WHEN movement_type.sign = '-' THEN movement.quantity ELSE 0 END) as total_out,
         COUNT(*) as count
-      FROM movement m
-      JOIN movement_type mt ON m.movement_type_id = mt.movement_type_id
-      WHERE m.datetime >= DATE_SUB(NOW(), INTERVAL 30 DAY)
-      GROUP BY mt.name
+      FROM movement
+      JOIN movement_type ON movement.movement_type_id = movement_type.movement_type_id
+      WHERE movement.datetime >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+      GROUP BY movement_type.name
     `);
     res.json(rows);
   } catch (err) {

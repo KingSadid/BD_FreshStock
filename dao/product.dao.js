@@ -4,15 +4,15 @@ const getAll = async (req, res) => {
   try {
     const [rows] = await db.query(`
       SELECT 
-        p.sku, p.barcode, p.name, p.description, 
-        p.min_stock, p.sale_price, p.requires_refrigeration,
-        p.expiry_alert_days, p.is_active,
-        c.name as category_name, c.category_id,
-        u.name as unit_name, u.abbreviation as unit_abbr
-      FROM product p
-      LEFT JOIN category c ON p.category_id = c.category_id
-      LEFT JOIN unit_of_measure u ON p.unit_id = u.unit_id
-      WHERE p.is_active = true
+        product.sku, product.barcode, product.name, product.description, 
+        product.min_stock, product.sale_price, product.requires_refrigeration,
+        product.expiry_alert_days, product.is_active,
+        category.name as category_name, category.category_id,
+        unit_of_measure.name as unit_name, unit_of_measure.abbreviation as unit_abbr
+      FROM product
+      LEFT JOIN category ON product.category_id = category.category_id
+      LEFT JOIN unit_of_measure ON product.unit_id = unit_of_measure.unit_id
+      WHERE product.is_active = true
     `);
     res.json(rows);
   } catch (err) {
@@ -24,13 +24,13 @@ const getBySku = async (req, res) => {
   try {
     const [rows] = await db.query(`
       SELECT 
-        p.*, 
-        c.name as category_name,
-        u.name as unit_name, u.abbreviation as unit_abbr
-      FROM product p
-      LEFT JOIN category c ON p.category_id = c.category_id
-      LEFT JOIN unit_of_measure u ON p.unit_id = u.unit_id
-      WHERE p.sku = ?
+        product.*, 
+        category.name as category_name,
+        unit_of_measure.name as unit_name, unit_of_measure.abbreviation as unit_abbr
+      FROM product
+      LEFT JOIN category ON product.category_id = category.category_id
+      LEFT JOIN unit_of_measure ON product.unit_id = unit_of_measure.unit_id
+      WHERE product.sku = ?
     `, [req.params.sku]);
     
     if (!rows[0]) return res.status(404).json({ error: 'Producto no encontrado' });
@@ -77,15 +77,15 @@ const getStockSummary = async (req, res) => {
   try {
     const [rows] = await db.query(`
       SELECT 
-        p.sku, p.name, p.min_stock,
-        COALESCE(SUM(b.current_quantity), 0) as total_stock,
-        COUNT(b.batch_id) as active_lots,
-        MIN(b.expiry_date) as nearest_expiry
-      FROM product p
-      LEFT JOIN batch b ON p.sku = b.product_sku 
-        AND b.status = 'active' AND b.current_quantity > 0
-      WHERE p.sku = ?
-      GROUP BY p.sku
+        product.sku, product.name, product.min_stock,
+        COALESCE(SUM(batch.current_quantity), 0) as total_stock,
+        COUNT(batch.batch_id) as active_lots,
+        MIN(batch.expiry_date) as nearest_expiry
+      FROM product
+      LEFT JOIN batch ON product.sku = batch.product_sku 
+        AND batch.status = 'active' AND batch.current_quantity > 0
+      WHERE product.sku = ?
+      GROUP BY product.sku
     `, [req.params.sku]);
     
     res.json(rows[0] || { total_stock: 0, active_lots: 0 });
@@ -132,11 +132,10 @@ const deleteProduct = async (req, res) => {
   try {
     const { sku } = req.params;
     
-    // Primero verificamos si tiene lotes asociados
+    
     const [batches] = await db.query('SELECT COUNT(*) as count FROM batch WHERE product_sku = ?', [sku]);
     
     if (batches[0].count > 0) {
-      // Si tiene lotes, hacemos borrado lógico para no romper integridad
       await db.query('UPDATE product SET is_active = false WHERE sku = ?', [sku]);
       return res.json({ message: 'Producto desactivado (borrado lógico) por tener lotes asociados' });
     }

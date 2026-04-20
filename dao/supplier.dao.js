@@ -4,14 +4,14 @@ const getAll = async (req, res) => {
   try {
     const [rows] = await db.query(`
       SELECT 
-        s.*,
-        COUNT(DISTINCT ps.product_sku) as product_count,
-        COUNT(DISTINCT b.batch_id) as batch_count
-      FROM supplier s
-      LEFT JOIN product_supplier ps ON s.supplier_id = ps.supplier_id
-      LEFT JOIN batch b ON s.supplier_id = b.supplier_id
-      WHERE s.is_active = true
-      GROUP BY s.supplier_id
+        supplier.*,
+        COUNT(DISTINCT product_supplier.product_sku) as product_count,
+        COUNT(DISTINCT batch.batch_id) as batch_count
+      FROM supplier
+      LEFT JOIN product_supplier ON supplier.supplier_id = product_supplier.supplier_id
+      LEFT JOIN batch ON supplier.supplier_id = batch.supplier_id
+      WHERE supplier.is_active = true
+      GROUP BY supplier.supplier_id
     `);
     res.json(rows);
   } catch (err) {
