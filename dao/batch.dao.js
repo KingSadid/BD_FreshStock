@@ -1,46 +1,38 @@
 const db = require('../services/mysql.service');
+const AppError = require('../utils/AppError');
 
-const getAll = async (req, res) => {
-  try {
-    const { status = 'active' } = req.query;
-    const [rows] = await db.query(`
-      SELECT 
-        batch.batch_id, batch.batch_code, batch.entry_date, batch.expiry_date,
-        batch.initial_quantity, batch.current_quantity, batch.unit_cost,
-        batch.warehouse_location, batch.status, batch.notes,
-        product.sku, product.name as product_name, product.sale_price,
-        unit_of_measure.abbreviation as unit_abbr,
-        supplier.name as supplier_name
-      FROM batch
-      JOIN product ON batch.product_sku = product.sku
-      LEFT JOIN unit_of_measure ON product.unit_id = unit_of_measure.unit_id
-      LEFT JOIN supplier ON batch.supplier_id = supplier.supplier_id
-      WHERE (? = 'all' OR batch.status = ?)
-      ORDER BY batch.entry_date ASC, batch.batch_id ASC
-    `, [status, status]);
-    res.json(rows);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+const getAll = async (status = 'active') => {
+  const [rows] = await db.query(`
+    SELECT 
+      batch.batch_id, batch.batch_code, batch.entry_date, batch.expiry_date,
+      batch.initial_quantity, batch.current_quantity, batch.unit_cost,
+      batch.warehouse_location, batch.status, batch.notes,
+      product.sku, product.name as product_name, product.sale_price,
+      unit_of_measure.abbreviation as unit_abbr,
+      supplier.name as supplier_name
+    FROM batch
+    JOIN product ON batch.product_sku = product.sku
+    LEFT JOIN unit_of_measure ON product.unit_id = unit_of_measure.unit_id
+    LEFT JOIN supplier ON batch.supplier_id = supplier.supplier_id
+    WHERE (? = 'all' OR batch.status = ?)
+    ORDER BY batch.entry_date ASC, batch.batch_id ASC
+  `, [status, status]);
+  return rows;
 };
 
-const getByProduct = async (req, res) => {
-  try {
-    const [rows] = await db.query(`
-      SELECT 
-        batch.*, supplier.name as supplier_name
-      FROM batch
-      LEFT JOIN supplier ON batch.supplier_id = supplier.supplier_id
-      WHERE batch.product_sku = ? AND batch.status = 'active'
-      ORDER BY batch.entry_date ASC
-    `, [req.params.sku]);
-    res.json(rows);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+const getByProduct = async (sku) => {
+  const [rows] = await db.query(`
+    SELECT 
+      batch.*, supplier.name as supplier_name
+    FROM batch
+    LEFT JOIN supplier ON batch.supplier_id = supplier.supplier_id
+    WHERE batch.product_sku = ? AND batch.status = 'active'
+    ORDER BY batch.entry_date ASC
+  `, [sku]);
+  return rows;
 };
 
-const create = async (req, res) => {
+const create = async (data) => {
   const connection = await db.getConnection();
   try {
     await connection.beginTransaction();
@@ -50,10 +42,10 @@ const create = async (req, res) => {
       entry_date, production_date, expiry_date,
       initial_quantity, unit_cost = 0, warehouse_location,
       notes
-    } = req.body;
+    } = data;
 
     if (!product_sku || !expiry_date || !initial_quantity) {
-      throw new Error('Faltan campos requeridos');
+      throw new AppError('Faltan campos requeridos', 400);
     }
 
     const batch_code = `L-${new Date().getFullYear()}-${Date.now().toString().slice(-4)}`;
@@ -79,98 +71,85 @@ const create = async (req, res) => {
 
     await connection.commit();
 
-    res.status(201).json({
+    return {
       batch_id: result.insertId,
       batch_code,
       message: 'Lote registrado exitosamente'
-    });
+    };
   } catch (err) {
     await connection.rollback();
-    res.status(500).json({ error: err.message });
+    throw err;
   } finally {
     connection.release();
   }
 };
 
-const updateQuantity = async (req, res) => {
-  try {
-    const { batch_id } = req.params;
-    const { quantity, user_id = 1, reason } = req.body;
+const updateQuantity = async (batchId, data) => {
+  const { quantity, user_id = 1, reason } = data;
 
-    const [batch] = await db.query(
-      'SELECT current_quantity FROM batch WHERE batch_id = ?',
-      [batch_id]
-    );
+  const [batch] = await db.query(
+    'SELECT current_quantity FROM batch WHERE batch_id = ?',
+    [batchId]
+  );
 
-    if (!batch[0]) return res.status(404).json({ error: 'Lote no encontrado' });
+  if (!batch[0]) throw new AppError('Lote no encontrado', 404);
 
-    const previous = batch[0].current_quantity;
-    const posterior = previous - quantity;
+  const previous = batch[0].current_quantity;
+  const posterior = previous - quantity;
 
-    if (posterior < 0) {
-      return res.status(400).json({ error: 'Cantidad insuficiente en lote' });
-    }
-
-    await db.query(
-      'UPDATE batch SET current_quantity = ? WHERE batch_id = ?',
-      [posterior, batch_id]
-    );
-
-    await db.query(
-      `INSERT INTO movement 
-       (batch_id, movement_type_id, user_id, quantity,
-        previous_quantity, posterior_quantity, reason)
-       VALUES (?, 2, ?, ?, ?, ?, ?)`,
-      [batch_id, user_id, quantity, previous, posterior, reason || 'Salida de inventario']
-    );
-
-    res.json({ message: 'Stock actualizado', new_quantity: posterior });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
+  if (posterior < 0) {
+    throw new AppError('Cantidad insuficiente en lote', 400);
   }
+
+  await db.query(
+    'UPDATE batch SET current_quantity = ? WHERE batch_id = ?',
+    [posterior, batchId]
+  );
+
+  await db.query(
+    `INSERT INTO movement 
+     (batch_id, movement_type_id, user_id, quantity,
+      previous_quantity, posterior_quantity, reason)
+     VALUES (?, 2, ?, ?, ?, ?, ?)`,
+    [batchId, user_id, quantity, previous, posterior, reason || 'Salida de inventario']
+  );
+
+  return { message: 'Stock actualizado', new_quantity: posterior };
 };
 
-const getExpiringBatches = async (req, res) => {
-  try {
-    const { days = 7 } = req.query;
-    const [rows] = await db.query(`
-      SELECT 
-        batch.batch_id, batch.batch_code, batch.expiry_date, batch.current_quantity,
-        product.sku, product.name as product_name,
-        DATEDIFF(batch.expiry_date, CURDATE()) as days_remaining
-      FROM batch
-      JOIN product ON batch.product_sku = product.sku
-      WHERE batch.status = 'active' 
-        AND batch.current_quantity > 0
-        AND batch.expiry_date <= DATE_ADD(CURDATE(), INTERVAL ? DAY)
-      ORDER BY batch.expiry_date ASC
-    `, [days]);
-    res.json(rows);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+const getExpiringBatches = async (days = 7) => {
+  const [rows] = await db.query(`
+    SELECT 
+      batch.batch_id, batch.batch_code, batch.expiry_date, batch.current_quantity,
+      product.sku, product.name as product_name,
+      DATEDIFF(batch.expiry_date, CURDATE()) as days_remaining
+    FROM batch
+    JOIN product ON batch.product_sku = product.sku
+    WHERE batch.status = 'active' 
+      AND batch.current_quantity > 0
+      AND batch.expiry_date <= DATE_ADD(CURDATE(), INTERVAL ? DAY)
+    ORDER BY batch.expiry_date ASC
+  `, [days]);
+  return rows;
 };
 
-const remove = async (req, res) => {
+const remove = async (batchId) => {
   const connection = await db.getConnection();
   try {
     await connection.beginTransaction();
 
-    const { batch_id } = req.params;
+    await connection.query('DELETE FROM movement WHERE batch_id = ?', [batchId]);
 
-    await connection.query('DELETE FROM movement WHERE batch_id = ?', [batch_id]);
-
-    const [result] = await connection.query('DELETE FROM batch WHERE batch_id = ?', [batch_id]);
+    const [result] = await connection.query('DELETE FROM batch WHERE batch_id = ?', [batchId]);
 
     if (result.affectedRows === 0) {
-      throw new Error('Lote no encontrado');
+      throw new AppError('Lote no encontrado', 404);
     }
 
     await connection.commit();
-    res.json({ message: 'Lote eliminado permanentemente' });
   } catch (err) {
     await connection.rollback();
-    res.status(500).json({ error: err.message });
+    throw err;
   } finally {
     connection.release();
   }

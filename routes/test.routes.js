@@ -1,9 +1,9 @@
-const express = require("express");
+const express = require('express');
 const router = express.Router();
-const testDao = require("../dao/test.dao");
+const testController = require('../controllers/test.controller');
 
-router.get('/', testDao.getAll);
-router.get('/:id', testDao.getById);
-router.post('/', testDao.create);
+router.get('/', testController.getAll);
+router.get('/:id', testController.getById);
+router.post('/', testController.create);
 
 module.exports = router;

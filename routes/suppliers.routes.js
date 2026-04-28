@@ -1,8 +1,8 @@
 const express = require('express');
 const router = express.Router();
-const supplierDao = require('../dao/supplier.dao');
+const supplierController = require('../controllers/supplier.controller');
 
-router.get('/', supplierDao.getAll);
-router.post('/', supplierDao.create);
+router.get('/', supplierController.getAll);
+router.post('/', supplierController.create);
 
 module.exports = router;

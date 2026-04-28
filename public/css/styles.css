@@ -52,6 +52,7 @@ body {
   opacity: 0;
   pointer-events: none;
   will-change: opacity, transform;
+  transition: opacity 0.3s ease;
 }
 
 .screen.active {
@@ -2824,6 +2825,14 @@ body {
   border-top: 1px solid var(--border);
   border-right: 1px solid var(--border);
   border-bottom: 1px solid var(--border);
+  transform: translateX(100px);
+  opacity: 0;
+  transition: transform 0.3s ease, opacity 0.3s ease;
+}
+
+.toast.show {
+  transform: translateX(0);
+  opacity: 1;
 }
 
 .toast-icon {
@@ -2855,6 +2864,13 @@ body {
   background: var(--primary);
   width: 100%;
   transform-origin: left;
+  transform: scaleX(1);
+  transition: none;
+}
+
+.toast-progress.run {
+  transform: scaleX(0);
+  transition: transform 3s linear;
 }
 
 .slide-backdrop {

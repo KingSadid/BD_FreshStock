@@ -1,5 +1,6 @@
 const express = require("express");
 const path = require("path");
+const cors = require("cors");
 
 const testRoutes = require("./routes/test.routes");
 const productRoutes = require("./routes/products.routes");
@@ -9,8 +10,6 @@ const categoryRoutes = require("./routes/categories.routes");
 const movementRoutes = require("./routes/movements.routes");
 const dashboardRoutes = require("./routes/dashboard.routes");
 const userRoutes = require("./routes/users.routes");
-
-const cors = require("cors");
 
 const PORT = 5000;
 const api = express();
@@ -29,8 +28,10 @@ api.use("/api/dashboard", dashboardRoutes);
 api.use("/api/users", userRoutes);
 
 api.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).json({ error: 'Error interno del servidor' });
+  console.error(err);
+  const status = err.statusCode || (res.statusCode === 200 ? 500 : res.statusCode);
+  const message = err.message || 'Error interno del servidor';
+  res.status(status).json({ error: message });
 });
 
 api.listen(PORT, () => {

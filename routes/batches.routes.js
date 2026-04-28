@@ -1,12 +1,12 @@
 const express = require('express');
 const router = express.Router();
-const batchDao = require('../dao/batch.dao');
+const batchController = require('../controllers/batch.controller');
 
-router.get('/', batchDao.getAll);
-router.get('/expiring', batchDao.getExpiringBatches);
-router.get('/product/:sku', batchDao.getByProduct);
-router.post('/', batchDao.create);
-router.patch('/:batch_id/quantity', batchDao.updateQuantity);
-router.delete('/:batch_id', batchDao.remove);
+router.get('/', batchController.getAll);
+router.get('/expiring', batchController.getExpiringBatches);
+router.get('/product/:sku', batchController.getByProduct);
+router.post('/', batchController.create);
+router.patch('/:batch_id/quantity', batchController.updateQuantity);
+router.delete('/:batch_id', batchController.remove);
 
 module.exports = router;

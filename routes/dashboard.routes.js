@@ -1,9 +1,9 @@
 const express = require('express');
 const router = express.Router();
-const dashboardDao = require('../dao/dashboard.dao');
+const dashboardController = require('../controllers/dashboard.controller');
 
-router.get('/kpis', dashboardDao.getKPIs);
-router.get('/movement-stats', dashboardDao.getMovementStats);
-router.get('/category-stats', dashboardDao.getCategoryStats);
+router.get('/kpis', dashboardController.getKPIs);
+router.get('/movement-stats', dashboardController.getMovementStats);
+router.get('/category-stats', dashboardController.getCategoryStats);
 
 module.exports = router;

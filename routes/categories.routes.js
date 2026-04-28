@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
-const categoryDao = require('../dao/category.dao');
+const categoryController = require('../controllers/category.controller');
 
-router.get('/', categoryDao.getAll);
+router.get('/', categoryController.getAll);
 
 module.exports = router;

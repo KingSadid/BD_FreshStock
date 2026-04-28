@@ -1,0 +1,764 @@
+% ============================================================
+%  FreshStock
+%  Universidad de San Buenaventura — Ingeniería Multimedia
+% ============================================================
+
+\documentclass[journal]{IEEEtran}
+
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[spanish,es-tabla]{babel}
+\usepackage{graphicx}
+\usepackage[hidelinks]{hyperref}
+\usepackage{tabularx}
+\usepackage{booktabs}
+\usepackage{placeins}
+\usepackage{microtype}
+\usepackage{xcolor}
+\usepackage{array}
+\usepackage{enumitem}
+\usepackage{cite}
+\usepackage{balance}   
+
+
+%  CONFIGURACION DE HYPERREF
+
+\hypersetup{
+	colorlinks        = true,
+	linkcolor         = black,
+	citecolor         = black,
+	urlcolor          = blue!70!black,
+	pdftitle          = {FreshStock: Sistema de Gestion de Inventarios},
+	pdfauthor         = {Zambrano, Chavez, Acosta},
+	pdfsubject        = {Ingenieria de Software -- PWA},
+	pdfkeywords       = {inventario, caducidad, PWA, PEPS, base de datos},
+	bookmarksnumbered = true,
+	breaklinks        = true
+}
+
+
+%  COMANDO PARA IMAGEN CON MARCADOR DE POSICION
+
+\newcommand{\figura}[4]{%
+	\IfFileExists{#3}{%
+		\includegraphics[width=#1,height=#2,keepaspectratio]{#3}%
+	}{%
+		\fboxsep=0pt
+		\colorbox{gray!18}{%
+			\parbox[c][#2][c]{#1}{%
+				\centering\color{gray!60}\small [Imagen: #4]%
+			}%
+		}%
+	}%
+}
+
+
+%  SEPARACION SILABICA
+
+\hyphenation{op-tical net-works semi-con-duc-tor Fresh-Stock
+	ca-du-ci-dad in-ven-ta-rio tra-za-bi-li-dad}
+
+%  MACROS
+
+\newcommand{\app}{\textit{FreshStock}}
+\newcommand{\peps}{\textbf{PEPS}}
+\newcommand{\pwa}{\textit{PWA}}
+
+
+%  INICIO DEL DOCUMENTO
+
+\begin{document}
+	
+	% -----------------------------------------------------------
+	%  CABECERA
+	% -----------------------------------------------------------
+	\title{%
+		FreshStock: Sistema de Gesti\'{o}n de Inventarios\\
+		y Control de Caducidad para Peque\~{n}os Comercios de Alimentos%
+	}
+	
+	\author{%
+		Brian~Jesid~Zambrano~Poveda,\;
+		Juan~Pablo~Ch\'{a}ves~Estupi\~{n}\'{a}n,\;
+		Sadid~Enrique~Acosta~Osorio%
+
+	}
+	
+	\markboth{%
+		Universidad de San Buenaventura --- Ingenier\'{i}a Multimedia, 2026%
+	}{%
+		Zambrano \MakeLowercase{\textit{et al.}}: \app{} ---
+		Gesti\'{o}n de Inventarios y Caducidad%
+	}
+	
+	\maketitle
+	
+	% -----------------------------------------------------------
+	%  RESUMEN
+	% -----------------------------------------------------------
+	\begin{abstract}
+		Este documento describe el dise\~{n}o y la planificaci\'{o}n de \app{},
+		una Aplicaci\'{o}n Web Progresiva (\pwa{}) orientada a la gesti\'{o}n de
+		inventario y al control de fechas de caducidad para peque\~{n}os y
+		medianos negocios minoristas de alimentos. La problem\'{a}tica central
+		abordada son las p\'{e}rdidas econ\'{o}micas y las ineficiencias operativas
+		ocasionadas por la ausencia de trazabilidad en tiempo real sobre
+		productos perecederos. La soluci\'{o}n propuesta integra el m\'{e}todo
+		\peps{} (Primero en Entrar, Primero en Salir), alertas autom\'{a}ticas
+		de caducidad y un sistema de auditor\'{i}a inmutable. El documento cubre
+		el an\'{a}lisis del problema, el estado del arte, una propuesta funcional
+		detallada, el dise\~{n}o del flujo de navegaci\'{o}n, el desarrollo de un
+		prototipo interactivo de alta fidelidad y el modelado de la base de
+		datos relacional que soporta la operativa del sistema.
+	\end{abstract}
+	
+	\begin{IEEEkeywords}
+		Gesti\'{o}n de inventario, control de fechas de caducidad, \pwa{},
+		m\'{e}todo \peps{}, modelo Entidad-Relaci\'{o}n, base de datos, trazabilidad.
+	\end{IEEEkeywords}
+	
+
+	%  SECCION 1 — PLANTEAMIENTO DEL PROBLEMA
+
+	\section{Planteamiento del Problema}
+	\label{sec:problema}
+	
+	\IEEEPARstart{E}{n} el sector de los peque\~{n}os y medianos comercios de
+	alimentos ---minimarkets, panader\'{i}as, fruter\'{i}as y similares--- el
+	control de inventario es un factor determinante para la rentabilidad
+	del negocio. A diferencia de las grandes cadenas, que cuentan con
+	sistemas ERP especializados, estos establecimientos dependen con
+	frecuencia de m\'{e}todos manuales o de hojas de c\'{a}lculo descentralizadas,
+	lo que introduce riesgos operativos considerables.
+	
+	% ------- 1.1 -----------------------------------------------
+	\subsection{Situaci\'{o}n Actual y Problem\'{a}tica}
+	\label{subsec:situacion}
+	
+	La problem\'{a}tica central radica en la \textbf{falta de trazabilidad
+		y control en tiempo real sobre los productos perecederos}.
+	Las principales dificultades identificadas son:
+	
+	\begin{itemize}[leftmargin=*, label=\textbullet, itemsep=2pt]
+		\item \textbf{Desconocimiento del stock real:} la disponibilidad
+		exacta solo se confirma mediante verificaci\'{o}n f\'{i}sica,
+		generando interrupciones en el servicio.
+		
+		\item \textbf{Gesti\'{o}n ineficiente de caducidades:} los productos
+		se organizan por orden de llegada, permitiendo que los
+		art\'{i}culos m\'{a}s antiguos permanezcan al fondo y caduquen
+		sin ser rotados oportunamente.
+		
+		\item \textbf{Reabastecimiento reactivo:} las compras se realizan
+		\'{u}nicamente cuando la escasez se detecta visualmente,
+		imposibilitando la planificaci\'{o}n anticipada.
+	\end{itemize}
+	
+	% ------- 1.2 -----------------------------------------------
+	\subsection{Perfiles de Usuario Objetivo}
+	\label{subsec:usuarios}
+	
+	El sistema est\'{a} dirigido a tres perfiles operativos diferenciados:
+	
+	\begin{itemize}[leftmargin=*, label=\textbullet, itemsep=2pt]
+		\item \textbf{Administradores:} requieren visibilidad global,
+		reportes de merma y control de usuarios del sistema.
+		
+		\item \textbf{Encargados de almac\'{e}n:} responsables del registro
+		de entradas y de la gesti\'{o}n de lotes por fecha de caducidad.
+		
+		\item \textbf{Vendedores:} necesitan registrar salidas y consultar
+		disponibilidad de forma \'{a}gil durante la atenci\'{o}n al cliente.
+	\end{itemize}
+	
+	% ------- 1.3 -----------------------------------------------
+	\subsection{Consecuencias de No Resolver el Problema}
+	\label{subsec:consecuencias}
+	
+	La gesti\'{o}n actual genera impactos directos sobre la viabilidad del
+	negocio, resumidos en la Tabla~\ref{tab:impacto}.
+	
+	\begin{table}[htbp]
+		\renewcommand{\arraystretch}{1.35}
+		\caption{Impacto negativo de la gesti\'{o}n manual de inventarios}
+		\label{tab:impacto}
+		\centering
+		\begin{tabular}{>{\bfseries}p{2.4cm} p{5.2cm}}
+			\toprule
+			Impacto & Descripci\'{o}n \\
+			\midrule
+			P\'{e}rdidas econ\'{o}micas
+			& Desechar productos por caducidad representa
+			una p\'{e}rdida directa e irrecuperable de capital. \\[3pt]
+			Da\~{n}o reputacional
+			& Vender productos pr\'{o}ximos a vencer genera
+			inconformidad en el cliente y deteriora la imagen
+			del negocio. \\[3pt]
+			Ineficiencia operativa
+			& El personal invierte tiempo en conteos manuales
+			en lugar de dedicarlo a la atenci\'{o}n al cliente. \\
+			\bottomrule
+		\end{tabular}
+	\end{table}
+	
+
+	%  SECCION 2 — JUSTIFICACION DE LA SOLUCION
+
+	\section{Justificaci\'{o}n de la Soluci\'{o}n}
+	\label{sec:justificacion}
+	
+	% ------- 2.1 -----------------------------------------------
+	\subsection{El Impacto del Desperdicio y la Necesidad de Control}
+	\label{subsec:impacto}
+	
+	A nivel global, la ineficiencia en la cadena de suministro y la
+	mala gesti\'{o}n de inventarios de perecederos contribuyen
+	significativamente a las p\'{e}rdidas econ\'{o}micas y al desperdicio de
+	alimentos~\cite{FAO:2019}. En el contexto de los peque\~{n}os comercios,
+	implementar pr\'{a}cticas estandarizadas de gesti\'{o}n de inventario
+	constituye un factor cr\'{i}tico de \'{e}xito que con frecuencia se descuida
+	por limitaciones t\'{e}cnicas y presupuestales~\cite{PMI:2019}.
+	
+	\app{} se propone cerrar esta brecha mediante la democratizaci\'{o}n
+	del acceso a herramientas de control avanzado. Se estima que la
+	implementaci\'{o}n puede ayudar a que no haya más desperdicios
+	por caducidad, transformando un modelo \emph{reactivo} en uno
+	\emph{proactivo}.
+	
+	% ------- 2.2 -----------------------------------------------
+	\subsection{Viabilidad Tecnol\'{o}gica: PWA}
+	\label{subsec:pwa}
+	
+	Se propone el desarrollo de una \textbf{Aplicaci\'{o}n Web Progresiva
+		(\pwa{})} como arquitectura id\'{o}nea, por dos razones fundamentales:
+	
+	\begin{itemize}[leftmargin=*, label=\textbullet, itemsep=2pt]
+		\item \textbf{Despliegue de bajo costo:} opera desde los
+		\textit{smartphones} o computadores ya disponibles en
+		el negocio, sin hardware especializado.
+		
+		\item \textbf{Sincronizaci\'{o}n y concurrencia:} m\'{u}ltiples usuarios
+		registran entradas y salidas simult\'{a}neamente, manteniendo
+		una \'{u}nica fuente de verdad centralizada.
+	\end{itemize}
+	
+	% ------- 2.3 -----------------------------------------------
+	\subsection{Matriz de Operaciones CRUD}
+	\label{subsec:crud}
+	
+	Para garantizar la inmutabilidad de los historiales, el sistema
+	restringe eliminaci\'{o}n y actualizaci\'{o}n en entidades sensibles,
+	tal como muestra la Tabla~\ref{tab:crud}.
+	
+	\begin{table}[htbp]
+		\renewcommand{\arraystretch}{1.3}
+		\caption{Operaciones CRUD y restricciones por entidad}
+		\label{tab:crud}
+		\centering
+		\begin{tabular}{l c c c c}
+			\toprule
+			\textbf{Entidad}    &
+			\textbf{Crear}      &
+			\textbf{Leer}       &
+			\textbf{Actualizar} &
+			\textbf{Eliminar}   \\
+			\midrule
+			Usuarios    & S\'{i} & S\'{i} & S\'{i}  & S\'{i}  \\
+			Productos   & S\'{i} & S\'{i} & S\'{i}  & S\'{i}  \\
+			Lotes       & S\'{i} & S\'{i} & S\'{i}  & No* \\
+			Movimientos & S\'{i} & S\'{i} & No* & No* \\
+			\bottomrule
+			\multicolumn{5}{l}{%
+				\footnotesize *Restringido para preservar la integridad
+				de auditor\'{i}a.}
+		\end{tabular}
+	\end{table}
+	
+
+	%  SECCION 3 — ESTADO DEL ARTE
+	
+	\section{Estado del Arte}
+	\label{sec:arte}
+	
+	% ------- 3.1 -----------------------------------------------
+	\subsection{An\'{a}lisis de Soluciones Existentes}
+	\label{subsec:referentes}
+	
+	Se analizaron tres referentes representativos del mercado:
+	
+	\begin{itemize}[leftmargin=*, label=\textbullet, itemsep=3pt]
+		\item \textbf{Sortly:} aplicaci\'{o}n de gesti\'{o}n visual intuitiva;
+		carece de funcionalidades para control de caducidades y
+		m\'{e}todo \peps{}. Presenta costo elevado para el segmento
+		objetivo.
+		
+		\item \textbf{Odoo Inventory:} ERP robusto con trazabilidad
+		completa, cuya curva de aprendizaje resulta excesiva
+		para micronegocios sin personal t\'{e}cnico dedicado.
+		
+		\item \textbf{Inventory Now:} soluci\'{o}n simple con soporte
+		\textit{offline}, pero sin gesti\'{o}n de fechas de
+		vencimiento ni soporte para m\'{u}ltiples sucursales.
+	\end{itemize}
+	
+	% ------- 3.2 -----------------------------------------------
+	\subsection{Diferenciaci\'{o}n de \app{}}
+	\label{subsec:diferenciacion}
+	
+	\app{} se distingue por su \textbf{enfoque nativo en caducidades y
+		en el m\'{e}todo \peps{}}. Integra alertas proactivas dise\~{n}adas
+	espec\'{i}ficamente para productos perecederos, combinando simplicidad
+	de uso con trazabilidad avanzada a un costo significativamente
+	menor que los ERPs disponibles en el mercado.
+	
+	
+	%  SECCION 4 — DEFINICION FUNCIONAL DEL SISTEMA
+	
+	\section{Definici\'{o}n Funcional del Sistema}
+	\label{sec:funcional}
+	
+	La arquitectura funcional de \app{} est\'{a} dise\~{n}ada para automatizar
+	la trazabilidad de productos perecederos. El n\'{u}cleo l\'{o}gico se
+	fundamenta en principios cl\'{a}sicos de gesti\'{o}n de inventarios
+	aplicados a cadenas de suministro, priorizando la rotaci\'{o}n de
+	art\'{i}culos sensibles al tiempo~\cite{Silver:2016}.
+	
+	% ------- 4.1 -----------------------------------------------
+	\subsection{M\'{o}dulos Centrales de Operaci\'{o}n}
+	\label{subsec:modulos}
+	
+	El sistema se divide en cuatro ejes funcionales interconectados:
+	
+	\begin{itemize}[leftmargin=*, label=\textbullet, itemsep=2pt]
+		\item \textbf{Dashboard de control:} panel anal\'{i}tico que consolida
+		indicadores clave de rendimiento (KPI) y centraliza alertas
+		cr\'{i}ticas en tiempo real.
+		
+		\item \textbf{Cat\'{a}logo maestro:} m\'{o}dulo de definici\'{o}n de
+		art\'{i}culos donde se establecen par\'{a}metros base para
+		automatizar alertas de reabastecimiento.
+		
+		\item \textbf{Gesti\'{o}n de lotes y m\'{e}todo \peps{}:} agrupa las
+		entradas en lotes y aplica estrictamente el m\'{e}todo
+		\textbf{Primero en Entrar, Primero en
+			Salir}~\cite{Silver:2016}, descontando autom\'{a}ticamente
+		el lote con fecha de caducidad m\'{a}s pr\'{o}xima en cada
+		proceso de salida o venta.
+		
+		\item \textbf{Motor de trazabilidad:} registro inmutable de cada
+		transacci\'{o}n etiquetada con marca de tiempo y autor
+		de la acci\'{o}n.
+	\end{itemize}
+	
+	% ------- 4.2 -----------------------------------------------
+	\subsection{Flujo L\'{o}gico y Ciclo de Vida del Producto}
+	\label{subsec:flujo}
+	
+	El ciclo de vida de la informaci\'{o}n opera en tres fases,
+	ilustradas en la Fig.~\ref{fig:arquitectura}:
+	
+	\begin{enumerate}[leftmargin=*, label=\arabic*., itemsep=2pt]
+		\item \textbf{Registro (entrada):} ingreso de nueva mercanc\'{i}a
+		con asignaci\'{o}n obligatoria de fecha de vencimiento.
+		
+		\item \textbf{Monitoreo activo:} un \textit{cron job} eval\'{u}a
+		diariamente cada lote, cambiando su estado de
+		\emph{Normal} a \emph{Riesgo} y luego a \emph{Vencido}.
+		
+		\item \textbf{Ejecuci\'{o}n (salida):} al registrar una venta, la
+		l\'{o}gica de base de datos substrae del lote m\'{a}s antiguo,
+		garantizando la rotaci\'{o}n \peps{}.
+	\end{enumerate}
+	
+	\begin{figure}[htbp]
+		\centering
+		\figura{\columnwidth}{4cm}{flujo_datos.png}{Flujo datos PEPS}
+		\caption{Flujo l\'{o}gico de informaci\'{o}n y aplicaci\'{o}n del
+			m\'{e}todo \peps{}.}
+		\label{fig:arquitectura}
+	\end{figure}
+	
+	%  SECCION 5 — FLUJO DE NAVEGACION
+	
+	\section{Flujo de Navegaci\'{o}n}
+	\label{sec:navegacion}
+	
+	% ------- 5.1 -----------------------------------------------
+	\subsection{Mapa Estructural de Vistas}
+	\label{subsec:mapa}
+	
+	El mapa de navegaci\'{o}n garantiza acceso r\'{a}pido a las funciones
+	operativas desde cualquier nivel de la jerarqu\'{i}a de pantallas.
+	La estructura de vistas se organiza as\'{i}:
+	
+	\medskip
+	\noindent\texttt{LOGIN}\\
+	\noindent\texttt{\ \ +-{}- DASHBOARD\ \ (Alertas y m\'{e}tricas)}\\
+	\noindent\texttt{\ \ \ \ \ \ +-{}- CATALOGO\ \ \ (B\'{u}squeda / creaci\'{o}n)}\\
+	\noindent\texttt{\ \ \ \ \ \ +-{}- LOTES\ \ \ \ \ \ (Entradas y mermas)}\\
+	\noindent\texttt{\ \ \ \ \ \ +-{}- PROVEEDORES\ (Contactos y precios)}\\
+	\noindent\texttt{\ \ \ \ \ \ +-{}- REPORTES\ \ \ (Auditor\'{i}a)}\\
+	\noindent\texttt{\ \ \ \ \ \ +-{}- USUARIOS\ \ \ (Roles y permisos)}
+	\medskip
+	
+	% ------- 5.2 -----------------------------------------------
+	\subsection{Identificaci\'{o}n de Acciones del Usuario}
+	\label{subsec:acciones}
+	
+	La Tabla~\ref{tab:acciones} detalla las operaciones cr\'{i}ticas que
+	el usuario ejecuta en cada vista para mantener activo el modelo
+	\peps{} y el control de caducidades.
+	
+	\begin{table}[htbp]
+		\renewcommand{\arraystretch}{1.35}
+		\caption{Acciones operativas y funcionales por vista}
+		\label{tab:acciones}
+		\centering
+		\begin{tabular}{>{\bfseries}p{1.8cm} p{5.6cm}}
+			\toprule
+			Vista & Acciones clave del usuario \\
+			\midrule
+			Dashboard
+			& Revisar m\'{e}tricas generales y acceder mediante
+			atajos a productos pr\'{o}ximos a caducar. \\[3pt]
+			Alertas
+			& Gestionar notificaciones cr\'{i}ticas y ejecutar
+			acciones como aplicar descuentos o registrar
+			mermas. \\[3pt]
+			Lotes
+			& Visualizar el orden de salida \peps{} e ingresar
+			mercanc\'{i}a con fecha de vencimiento. \\[3pt]
+			Cat\'{a}logo
+			& Consultar inventario e identificar visualmente
+			el estado del stock (normal, bajo o cr\'{i}tico). \\
+			\bottomrule
+		\end{tabular}
+	\end{table}
+	
+
+	%  SECCION 6 — DESARROLLO DE LA INTERFAZ Y PROTOTIPO
+	
+	\section{Desarrollo de la Interfaz y Prototipo}
+	\label{sec:prototipo}
+	
+	% ------- 6.1 -----------------------------------------------
+	\subsection{Dise\~{n}o Centrado en el Usuario y Sem\'{a}ntica Visual}
+	\label{subsec:diseno}
+	
+	Se desarroll\'{o} un prototipo navegable de alta fidelidad basado en
+	los lineamientos de \textit{Material Design~3}~\cite{MaterialDesign:2026}.
+	El objetivo fue minimizar la carga cognitiva del usuario en entornos
+	de alta rotaci\'{o}n comercial. Se implement\'{o} un sistema de
+	\textbf{sem\'{a}ntica de colores} estandarizado para guiar decisiones
+	operativas en tiempo real:
+	
+	\begin{itemize}[leftmargin=*, label=\textbullet, itemsep=2pt]
+		\item \textbf{Rojo (cr\'{i}tico):} acciones destructivas, productos
+		vencidos o quiebre de stock.
+		
+		\item \textbf{Amarillo / Naranja (advertencia):} lotes que
+		entrar\'{a}n en ventana de caducidad en los pr\'{o}ximos 7~d\'{i}as.
+		
+		\item \textbf{Verde / Neutro (\'{o}ptimo):} estados normales de
+		inventario y retroalimentaci\'{o}n positiva ante acciones
+		completadas~\cite{MaterialDesign:2026}.
+	\end{itemize}
+	
+	Esta coherencia visual gu\'{i}a la atenci\'{o}n del operario hacia
+	las tareas prioritarias, atacando directamente la problem\'{a}tica
+	descrita en la Secci\'{o}n~\ref{sec:problema}.
+	
+	% ------- 6.2 -----------------------------------------------
+	\subsection{Vistas Funcionales del Sistema}
+	\label{subsec:vistas}
+	
+	A continuaci\'{o}n se presentan las vistas que conforman el ecosistema
+	de la \pwa{} \app{}.
+	
+	% ··· 6.2.1 -------------------------------------------------
+	\subsubsection{Vista General y Alertas Tempranas}
+	
+	El \textbf{Dashboard} (Fig.~\ref{fig:dashboard}) funciona como
+	centro de mando: prioriza las alertas del d\'{i}a y grafica el flujo
+	de entradas y salidas, otorgando al administrador visibilidad
+	instant\'{a}nea del estado operativo. El \textbf{Centro de Alertas}
+	(Fig.~\ref{fig:alertas}) permite ejecutar acciones directas
+	desde la notificaci\'{o}n ---como dar de baja un producto o aplicar
+	promociones para evitar mermas---.
+	
+	\begin{figure}[htbp]
+		\centering
+		\figura{\columnwidth}{5cm}{vista_dashboard.png}{Dashboard principal}
+		\caption{Dashboard principal con resumen m\'{e}trico y atajos
+			de alerta.}
+		\label{fig:dashboard}
+	\end{figure}
+	
+	\begin{figure}[htbp]
+		\centering
+		\figura{\columnwidth}{5cm}{vista_alertas.png}{Centro de alertas}
+		\caption{Centro de alertas clasificado por nivel de criticidad.}
+		\label{fig:alertas}
+	\end{figure}
+	
+	% ··· 6.2.2 -------------------------------------------------
+	\subsubsection{Control \peps{} y Cat\'{a}logo Visual}
+	
+	La vista de \textbf{Gesti\'{o}n de Lotes} (Fig.~\ref{fig:lotes})
+	organiza la mercanc\'{i}a autom\'{a}ticamente por fecha de caducidad e
+	indica qu\'{e} lote debe salir primero seg\'{u}n la prioridad \peps{}.
+	El \textbf{Cat\'{a}logo de Productos} (Fig.~\ref{fig:productos}) utiliza
+	tarjetas visuales para identificar r\'{a}pidamente la disponibilidad
+	y el umbral de stock de cada art\'{i}culo.
+	
+	\begin{figure}[htbp]
+		\centering
+		\figura{\columnwidth}{5cm}{vista_lotes.png}{Gestion de lotes PEPS}
+		\caption{Gesti\'{o}n de lotes con priorizaci\'{o}n autom\'{a}tica
+			del m\'{e}todo \peps{}.}
+		\label{fig:lotes}
+	\end{figure}
+	
+	\begin{figure}[htbp]
+		\centering
+		\figura{\columnwidth}{5cm}{vista_productos.png}{Catalogo de productos}
+		\caption{Cat\'{a}logo de productos con indicadores visuales de stock.}
+		\label{fig:productos}
+	\end{figure}
+	
+	% ··· 6.2.3 -------------------------------------------------
+	\subsubsection{Auditor\'{i}a, Proveedores y Administraci\'{o}n}
+	
+	El m\'{o}dulo de \textbf{Reportes} (Fig.~\ref{fig:reportes}) documenta
+	cada movimiento de forma inmutable, destacando los productos con
+	mayores p\'{e}rdidas. El m\'{o}dulo de \textbf{Proveedores}
+	(Fig.~\ref{fig:proveedores}) centraliza contactos para facilitar el
+	reabastecimiento. La gesti\'{o}n de \textbf{Usuarios}
+	(Fig.~\ref{fig:usuarios}) restringe las acciones cr\'{i}ticas al rol
+	de administrador.
+	
+	\begin{figure}[htbp]
+		\centering
+		\figura{\columnwidth}{5cm}{vista_reportes.png}{Panel de reportes}
+		\caption{Panel de reportes con historial de auditor\'{i}a inmutable.}
+		\label{fig:reportes}
+	\end{figure}
+	
+	\begin{figure}[htbp]
+		\centering
+		\figura{\columnwidth}{5cm}{vista_proveedores.png}{Directorio proveedores}
+		\caption{Directorio y m\'{e}tricas de rendimiento de proveedores.}
+		\label{fig:proveedores}
+	\end{figure}
+	
+	\begin{figure}[htbp]
+		\centering
+		\figura{\columnwidth}{5cm}{vista_usuarios.png}{Gestion de usuarios}
+		\caption{Gesti\'{o}n de usuarios y matriz de permisos por roles.}
+		\label{fig:usuarios}
+	\end{figure}
+	
+	\FloatBarrier
+	
+
+	%  SECCION 7 — MODELADO DE LA BASE DE DATOS
+
+	\section{Modelado e Implementaci\'{o}n de la Base de Datos}
+	\label{sec:bd}
+	
+	Para dar soporte estructural a la l\'{o}gica de negocio, se dise\~{n}\'{o}
+	una base de datos relacional orientada a eliminar redundancias,
+	facilitar la escalabilidad y garantizar la integridad de las
+	transacciones operativas del comercio.
+	
+	% ------- 7.1 -----------------------------------------------
+	\subsection{Modelo Entidad-Relaci\'{o}n}
+	\label{subsec:er}
+	
+	Antes de revisar las decisiones de dise\~{n}o, es fundamental
+	comprender la estructura global sobre la que opera el sistema.
+	El Diagrama Entidad-Relaci\'{o}n (Fig.~\ref{fig:er_diagram}) muestra
+	c\'{o}mo se relacionan las entidades centrales: productos, lotes,
+	movimientos, proveedores y usuarios. Cada caja representa una
+	tabla; las l\'{i}neas que las conectan indican que comparten
+	informaci\'{o}n, y los s\'{i}mbolos en sus extremos expresan cu\'{a}ntos
+	registros de un lado pueden relacionarse con cu\'{a}ntos del otro
+	(cardinalidad).
+	
+	\begin{figure}[htbp]
+		\centering
+		\figura{\columnwidth}{7cm}{diagramaER_FreshStock.png}{%
+			Diagrama ER FreshStock}
+		\caption{%
+			Diagrama Entidad-Relaci\'{o}n de \app{}. Cada caja es
+			una tabla; las l\'{i}neas expresan relaciones y cardinalidades.%
+		}
+		\label{fig:er_diagram}
+	\end{figure}
+	
+	% ------- 7.2 -----------------------------------------------
+	\subsection{Justificaci\'{o}n del Dise\~{n}o}
+	\label{subsec:justificacion_bd}
+	
+	Con la estructura general en mente, se explican a continuaci\'{o}n
+	las decisiones de modelado m\'{a}s relevantes.
+	
+	% ··· 7.2.1 -------------------------------------------------
+	\subsubsection{Separaci\'{o}n entre Cat\'{a}logo y Existencias F\'{i}sicas}
+	
+	La decisi\'{o}n m\'{a}s trascendental fue separar el cat\'{a}logo maestro
+	(\texttt{PRODUCTS}) de las existencias f\'{i}sicas (\texttt{BATCHES}).
+	Un mismo producto ---por ejemplo, ``Yogurt''--- puede llegar al
+	almac\'{e}n en distintas fechas y con distintas fechas de vencimiento.
+	Sin esta separaci\'{o}n, ser\'{i}a imposible identificar qu\'{e} unidades
+	vencer\'{a}n primero. Al agrupar en lotes, el sistema identifica
+	autom\'{a}ticamente cu\'{a}l debe salir antes, ejecutando el m\'{e}todo
+	\peps{} con exactitud.
+	
+	La entidad \texttt{MOVEMENTS} act\'{u}a como libro contable digital:
+	registra de forma inmutable cada entrada, salida o merma, junto
+	con el usuario responsable y la marca de tiempo exacta.
+	
+	% ··· 7.2.2 -------------------------------------------------
+	\subsubsection{Relaci\'{o}n N:M entre Productos y Proveedores}
+	
+	Un proveedor suministra m\'{u}ltiples productos; un producto puede
+	adquirirse a varios proveedores. Esta relaci\'{o}n de muchos a muchos
+	(N:M) se resuelve con la tabla asociativa
+	\texttt{PRODUCT\_SUPPLIERS}, que adem\'{a}s almacena el atributo
+	\texttt{purchase\_price}: el precio exacto al que cada proveedor
+	vende cada producto, informaci\'{o}n esencial para comparar costos
+	y calcular m\'{a}rgenes de rentabilidad.
+	
+	% ··· 7.2.3 -------------------------------------------------
+	\subsubsection{Integridad Referencial y Tipos de Datos}
+	
+	Se configur\'{o} integridad referencial activa: \texttt{ON DELETE
+		RESTRICT} impide borrar un producto con lotes asociados, y
+	\texttt{ON DELETE CASCADE} elimina registros dependientes cuando
+	corresponde. Se emplearon tipos especializados ---\texttt{DECIMAL}
+	para montos monetarios y \texttt{TIMESTAMP} para auditor\'{i}a
+	con marca de tiempo precisa--- para garantizar exactitud
+	en todos los registros operativos.
+	
+
+	%  SECCION 8 — CONCLUSION
+
+	\section{Conclusi\'{o}n}
+	\label{sec:conclusion}
+	
+	% Instruccion \balance para igualar columnas en la ultima pagina
+	\balance
+	
+	En el presente documento t\'{e}cnico se ha definido el alcance
+	funcional, visual y de datos de \app{}. La conceptualizaci\'{o}n de
+	una \pwa{} respaldada por un dise\~{n}o de interfaces basado en
+	sem\'{a}ntica visual valida la propuesta tecnol\'{o}gica para reducir
+	mermas en peque\~{n}os comercios de alimentos.
+	
+	La separaci\'{o}n estrat\'{e}gica de \texttt{PRODUCTS} y \texttt{BATCHES}
+	en la base de datos relacional, junto con la normalizaci\'{o}n de
+	la relaci\'{o}n con proveedores mediante \texttt{PRODUCT\_SUPPLIERS},
+	sientan bases escalables y auditables que dotan al sistema del
+	rigor t\'{e}cnico necesario para operar en un entorno real.
+	
+	De cara a la \'{u}ltima etapa del proyecto, el equipo abordar\'{a} la
+	implementaci\'{o}n del sistema de autenticaci\'{o}n segura mediante
+	hashing criptogr\'{a}fico propio, el dise\~{n}o e implementaci\'{o}n de la
+	capa de persistencia NoSQL bajo un enfoque de \textit{Query Driven
+		Design}, y la construcci\'{o}n del proceso ETL que consolidar\'{a} los
+	datos operativos en informaci\'{o}n estrat\'{e}gica para la toma de
+	decisiones del negocio.
+
+	%  APENDICES
+
+	\appendices
+	
+	% ------- A -------------------------------------------------
+	\section{Recursos del Proyecto}
+	\label{apx:recursos}
+	
+	\begin{itemize}[leftmargin=*, label=\textbullet]
+		\item \textbf{Repositorio en GitHub:}\\
+		\url{https://github.com/KingSadid/BD_FreshStock.git}
+		
+		\item \textbf{C\'{o}digo fuente del documento (\LaTeX{}):}\\
+		\url{https://www.overleaf.com/4398971276nkbbgsgfvdtb#674337}
+	\end{itemize}
+	
+	% ------- B -------------------------------------------------
+	\section{Glosario de T\'{e}rminos Clave}
+	\label{apx:glosario}
+	
+	\begin{itemize}[leftmargin=*, label=\textbullet, itemsep=2pt]
+		\item \textbf{PWA (\textit{Progressive Web App}):} aplicaci\'{o}n
+		web que ofrece experiencia equivalente a app nativa sin
+		instalaci\'{o}n desde tienda de aplicaciones.
+		
+		\item \textbf{PEPS:} ``Primero en Entrar, Primero en Salir''
+		(\textit{FIFO}). M\'{e}todo de rotaci\'{o}n de inventarios
+		para productos perecederos.
+		
+		\item \textbf{Merma:} p\'{e}rdida f\'{i}sica de productos por
+		caducidad, da\~{n}o o deterioro.
+		
+		\item \textbf{Modelo ER:} diagrama que representa la estructura
+		conceptual de una base de datos mediante entidades,
+		atributos y relaciones.
+		
+		\item \textbf{KPI (\textit{Key Performance Indicator}):}
+		indicador clave de rendimiento operativo.
+		
+		\item \textbf{CRUD:} operaciones b\'{a}sicas sobre datos:
+		\textit{Create}, \textit{Read}, \textit{Update},
+		\textit{Delete}.
+		
+		\item \textbf{ETL (Extract, Transform, Load):} proceso que
+		extrae datos operativos, los transforma en informaci\'{o}n
+		consolidada y los carga en estructuras optimizadas
+		para anal\'{i}tica.
+		
+		\item \textbf{NoSQL:} bases de datos no relacionales, optimizadas
+		para grandes vol\'{u}menes y estructuras de datos flexibles.
+		
+		\item \textbf{Query Driven Design:} metodolog\'{i}a de modelado
+		NoSQL que dise\~{n}a la estructura a partir de las
+		consultas m\'{a}s frecuentes del sistema.
+		
+		\item \textbf{Hashing criptogr\'{a}fico:} transformaci\'{o}n
+		irreversible de una contrase\~{n}a mediante una funci\'{o}n
+		matem\'{a}tica, de modo que la contrase\~{n}a original
+		nunca se almacene en texto plano.
+	\end{itemize}
+	
+
+	%  REFERENCIAS
+
+	\begin{thebibliography}{1}
+		
+		\bibitem{Silver:2016}
+		E.~A. Silver, D.~F. Pyke, and D.~J. Thomas,
+		\emph{Inventory and Production Management in Supply Chains},
+		4th~ed.
+		Boca Raton, FL, USA: CRC Press, 2016.
+		
+		\bibitem{PMI:2019}
+		Project Management Institute,
+		``Small Business Inventory Management: Best Practices,''
+		PMI White Paper, 2019.
+		
+		\bibitem{FAO:2019}
+		Food and Agriculture Organization of the United Nations,
+		\emph{The State of Food and Agriculture 2019: Moving Forward on
+			Food Loss and Waste Reduction},
+		Rome, Italy: FAO, 2019.
+		
+		\bibitem{MaterialDesign:2026}
+		Google LLC,
+		``Material Design 3,'' 2026.
+		[Online]. Disponible en: \url{https://m3.material.io/}
+		
+	\end{thebibliography}
+	
+\end{document}
