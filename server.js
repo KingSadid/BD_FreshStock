@@ -34,7 +34,7 @@ api.use((err, req, res, next) => {
 });
 
 api.listen(PORT, () => {
-  console.log(`🚀 FreshStock Server running in http://localhost:${PORT}`);
-  console.log(`📊 Dashboard: http://localhost:${PORT}`);
-  console.log(`🔧 API Endpoint: http://localhost:${PORT}/api`);
+  console.log(` FreshStock Server running in http://localhost:${PORT}`);
+  console.log(` Dashboard: http://localhost:${PORT}`);
+  console.log(` API Endpoint: http://localhost:${PORT}/api`);
 });
