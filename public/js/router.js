@@ -1,7 +1,3 @@
-/**
- * Simple screen router.
- * Replaces GSAP-based navigation with CSS transitions.
- */
 const AppRouter = {
   navigateTo(screenId) {
     if (AppState.isNavigating || screenId === AppState.currentScreen) return;
