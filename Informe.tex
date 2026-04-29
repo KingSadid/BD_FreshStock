@@ -649,149 +649,137 @@
 	\label{sec:backend}
 	
 	% ------- 8.1 -----------------------------------------------
-	\subsection{Las primeras decisiones del equipo: por qu\'{e} Node.js y Express}
+	\subsection{Decisiones de plataforma: por qu\'{e} Node.js y Express}
 	\label{subsec:decisiones}
 	
-	Cuando el equipo de desarrollo comenz\'{o} a construir el servidor
-	de \app{}, la primera pregunta que se plante\'{o} fue: ``\textquestiondown Qu\'{e}
-	tecnolog\'{i}a necesita una fruter\'{i}a real?''. No una
-	multinacional, sino un negocio donde tres personas pod\'{i}an
-	estar consultando stock, vendiendo y revisando alertas
-	exactamente al mismo tiempo. Se dio cuenta de que el servidor
-	deb\'{i}a comportarse como un cajero r\'{a}pido: no pod\'{i}a
-	dejar la fila en pausa mientras otro cliente decid\'{i}a qu\'{e}
-	comprar. Por eso eligi\'{o} \textbf{Node.js}. Su modelo
-	\emph{non-blocking I/O} significaba que, si un vendedor ped\'{i}a
-	los lotes pr\'{o}ximos a vencer, el servidor no se congelaba
-	esperando a la base de datos; atend\'{i}a inmediatamente la
-	siguiente petici\'{o}n.
+	Cuando el equipo comenz\'{o} a construir el servidor de \app{},
+	la primera duda fue qu\'{e} tecnolog\'{i}a usar en el backend. No
+	se trataba de un sistema masivo, sino de una fruter\'{i}a donde
+	varios vendedores consultan stock al mismo tiempo. La clave era
+	que el servidor no se bloqueara esperando respuestas de la base
+	de datos.
 	
-	Luego lleg\'{o} \textbf{Express}. Al principio se pens\'{o} en
-	escribir todo desde cero, pero r\'{a}pidamente se vio que eso
-	implicar\'{i}a perder tiempo parseando cabeceras HTTP y leyendo
-	JSON a mano. Express actu\'{o} como un maitre experimentado:
-	recib\'{i}a la petici\'{o}n, la clasificaba por URL
-	---``/api/products'', ``/api/batches''--- y la derivaba donde
-	correspond\'{i}a. Eso permiti\'{o} al equipo concentrarse en la
-	l\'{o}gica de negocio en lugar de reinventar la rueda.
+	Se eligi\'{o} \textbf{Node.js} porque trabaja con un modelo
+	\emph{event-driven}: en lugar de crear un hilo nuevo por cada
+	petici\'{o}n, usa un \'{u}nico hilo con un \textit{event loop}
+	que va atendiendo las solicitudes a medida que llegan. Esto es
+	muy \'{u}til cuando las operaciones son principalmente consultas
+	a una base de datos, porque no se desperdicia memoria creando
+	procesos innecesarios.
+	
+	Sobre Node se instal\'{o} \textbf{Express.js}, un framework que
+	simplifica mucho la creaci\'{o}n de APIs. Express se encarga de
+	rutas, cabeceras HTTP y parsing de JSON, as\'{i} que el equipo
+	pudo concentrarse en la l\'{o}gica del inventario en lugar de
+	programar un servidor desde cero. Adem\'{a}s, su sistema de
+	middleware permiti\'{o} agregar despu\'{e}s el manejo de errores y
+	CORS sin modificar los endpoints directamente.
 	
 	% ------- 8.2 -----------------------------------------------
-	\subsection{El d\'{i}a que el c\'{o}digo spaghetti oblig\'{o} a reordenar todo}
-	\label{subsec:spaghetti}
+	\subsection{Separando responsabilidades: Routes, Controllers y DAOs}
+	\label{subsec:capas}
 	
-	Al principio del proyecto, todo el backend viv\'{i}a en unos pocos
-	archivos que hac\'{i}an de todo. Los DAOs no solo ejecutaban
-	consultas SQL, sino que tambi\'{e}n recib\'{i}an \texttt{req} y
-	\texttt{res}, formateaban JSON y decid\'{i}an c\'{o}digos de
-	estado HTTP. Era como si el cocinero no solo cocinara, sino que
-	tambi\'{e}n cobrara en caja y limpiara las mesas. Cuando fue
-	necesario corregir un error de stock, el equipo pas\'{o} horas
-	perdido entre capas mezcladas. Ah\'{i} entendi\'{o} que el
-	principio de responsabilidad \'{u}nica (\textbf{SRP}) no era una
-	moda acad\'{e}mica, sino una forma de sobrevivir.
+	En las primeras versiones del c\'{o}digo, todo estaba mezclado:
+	los mismos archivos que consultaban la base de datos tambi\'{e}n
+	recib\'{i}an las peticiones HTTP y devolv\'{i}an respuestas JSON.
+	Era dif\'{i}cil de mantener porque cualquier cambio en una parte
+	romp\'{i}a otra. Ah\'{i} se entendi\'{o} la importancia del
+	principio de responsabilidad \'{u}nica (\textbf{SRP}).
 	
-	Se decidi\'{o} dividir el backend en tres estaciones bien
-	definidas:
+	Se decidi\'{o} dividir el backend en tres capas bien definidas:
 	
 	\begin{enumerate}[leftmargin=*, label=\arabic*., itemsep=2pt]
-		\item \textbf{Routes:} la recepci\'{o}n. Solo anunciaban qu\'{e}
-		plato se pod\'{i}a pedir y a qu\'{e} mesa. Por ejemplo:
+		\item \textbf{Routes:} se encargan solo del enrutamiento.
+		Definen qu\'{e} URL lleva a qu\'{e} funci\'{o}n, sin meterse
+		en l\'{o}gica de negocio. Ejemplo:
 		\texttt{router.get('/products', productController.getAll)}.
-		No sab\'{i}an c\'{o}mo se cocinaba.
 		
-		\item \textbf{Controllers:} el sal\'{o}n del maitre.
-		Recib\'{i}an la orden del cliente, validaban que tuviera
-		sentido y llamaban a la cocina. No sab\'{i}an SQL; solo
-		sab\'{i}an hablar con el cliente y con los DAOs.
+		\item \textbf{Controllers:} act\'{u}an como intermediarios.
+		Reciben la petici\'{o}n del cliente, extraen los datos que
+		necesitan, llaman a los DAOs y devuelven la respuesta en
+		JSON. No saben nada de SQL.
 		
-		\item \textbf{DAOs:} la l\'{i}nea de cocina. Su \'{u}nica
-		preocupaci\'{o}n era ejecutar las recetas SQL en MySQL. No
-		sab\'{i}an que exist\'{i}a un protocolo HTTP.
+		\item \textbf{DAOs (Data Access Objects):} son los que hablan
+		directamente con MySQL. Ejecutan las consultas y devuelven
+		los resultados. No saben que existe HTTP.
 	\end{enumerate}
 	
-	Esa separaci\'{o}n salv\'{o} al proyecto. Hoy, si hubiera que
-	cambiar el motor de base de datos, solo se reescribir\'{i}an los
-	DAOs. Los controllers ni siquiera se enterar\'{i}an.
+	Esta separaci\'{o}n tiene una ventaja pr\'{a}ctica muy clara: si
+	alg\'{u}n d\'{i}a se quiere cambiar de MySQL a PostgreSQL, solo
+	hay que reescribir los DAOs. Los controllers y las rutas quedan
+	intactos.
 	
 	% ------- 8.3 -----------------------------------------------
-	\subsection{Los trucos que se aprendieron en el camino: asyncHandler, AppError y el pool}
-	\label{subsec:trucos}
+	\subsection{asyncHandler, AppError y el pool de conexiones}
+	\label{subsec:middleware}
 	
-	Otro dolor de cabeza fue el c\'{o}digo repetido. Cada controller
-	ten\'{i}a el mismo bloque \texttt{try/catch}, como un camarero que
-	repet\'{i}a ``buenos d\'{i}as, bienvenido'' mec\'{a}nicamente cien
-	veces al d\'{i}a. El equipo se cans\'{o} de copiar y pegar, as\'{i}
-	que cre\'{o} \texttt{asyncHandler}: un envoltorio de una sola
-	l\'{i}nea que atrapaba errores autom\'{a}ticamente y los enviaba
-	al middleware central. De pronto, los controllers se le\'{i}an como
-	secuencias directas: ``pide los productos, recibe los productos,
-	responde los productos''. Sin ruido.
+	Un problema recurrente era repetir el mismo bloque
+	\texttt{try/catch} en cada controller. Se hac\'{i}a tedioso y
+	facilitaba errores por descuido. La soluci\'{o}n fue crear
+	\texttt{asyncHandler}: una funci\'{o}n de orden superior que
+	envuelve los controllers, atrapa cualquier error de una promesa y
+	lo env\'{i}a autom\'{a}ticamente al middleware de errores de
+	Express mediante \texttt{next(error)}.
 	
-	Pero atrapar errores no era suficiente; tambi\'{e}n ten\'{i}an que
-	hablar claro. Al principio, cuando un producto no exist\'{i}a, el
-	servidor respond\'{i}a un gen\'{e}rico ``Error interno del servidor''
-	con c\'{o}digo 500. Eso confund\'{i}a al frontend y volv\'{i}a
-	loco al equipo depurando. Se adopt\'{o} entonces una clase
-	\textbf{AppError} que portaba su propio c\'{o}digo HTTP: 404 si
-	no exist\'{i}a, 400 si los datos eran inv\'{a}lidos, 409 si hab\'{i}a
-	duplicados. As\'{i}, cuando un DAO lanzaba \texttt{throw new
-	AppError('Producto no encontrado', 404)}, el middleware central
-	respond\'{i}a exactamente lo que deb\'{i}a, sin decenas de
-	\texttt{if} anidados en cada controller.
+	Pero atrapar errores no era suficiente; tambi\'{e}n hab\'{i}a que
+	distinguir qu\'{e} tipo de error era. Responder siempre ``Error
+	interno del servidor'' con c\'{o}digo 500 no ayudaba al frontend
+	ni al programador. Se cre\'{o} entonces la clase
+	\textbf{AppError}, que extiende la clase nativa \texttt{Error} y
+	le agrega un c\'{o}digo HTTP propio: 404 cuando no se encuentra
+	un recurso, 400 cuando los datos son inv\'{a}lidos, 409 cuando
+	hay un duplicado. El middleware de errores detecta si el error es
+	instancia de \texttt{AppError} y responde con el c\'{o}digo
+	correcto, sin necesidad de poner \texttt{if} en cada controller.
 	
-	Respecto a la base de datos, el equipo aprendi\'{o} que abrir una
-	conexi\'{o}n nueva por cada consulta era como si cada mesero fuera
-	a la bodega con su propia llave en lugar de usar la puerta
-	principal. Cre\'{o} un servicio \texttt{mysql.service.js} que
-	inicializaba un \textbf{pool} de conexiones desde el arranque.
-	Cuando tres vendedores consultaban stock al mismo tiempo, el
-	servidor repart\'{i}a conexiones ya abiertas en lugar de saturar a
-	MySQL. Los DAOs simplemente importaban ese pool y ejecutaban
-	\texttt{db.query(sql, params)}. Ligero, r\'{a}pido y sin
-	conexiones hu\'{e}rfanas.
+	Por \'{u}ltimo, en la base de datos se evit\'{o} abrir una
+	conexi\'{o}n nueva por cada consulta. Eso es ineficiente porque
+	cada conexi\'{o}n nueva implica un \emph{handshake} con el
+	motor. En su lugar, se configur\'{o} un \textbf{pool de
+	conexiones} en \texttt{mysql.service.js} usando
+	\texttt{mysql2/promise}. El pool mantiene varias conexiones
+	abiertas desde el inicio y las reutiliza. As\'{i}, cuando tres
+	vendedores consultan stock al mismo tiempo, el servidor usa
+	conexiones que ya est\'{a}n listas, sin saturar MySQL.
 	
 	% ------- 8.4 -----------------------------------------------
-	\subsection{Una tarde cualquiera en el servidor: c\'{o}mo fluy\'{o} una petici\'{o}n real}
-	\label{subsec:unatarde}
+	\subsection{C\'{o}mo viaja una petici\'{o}n: ejemplo pr\'{a}ctico}
+	\label{subsec:traza}
 	
-	Para que todo esto tuviera sentido, conviene recordar lo que
-	ocurri\'{o} una tarde a las tres de la tarde. El encargado del
-	almac\'{e}n abri\'{o} su tel\'{e}fono y toc\'{o} ``Ver lotes
-	pr\'{o}ximos a vencer''. En ese instante, su navegador envi\'{o}
-	una petici\'{o}n \texttt{GET /api/batches/expiring}. Express, en
-	el archivo \texttt{batches.routes.js}, la reconoci\'{o} y la
-	deriv\'{o} al controller correspondiente.
+	Para entender c\'{o}mo funciona todo junto, conviene ver el
+	recorrido de una petici\'{o}n real. Supongamos que el encargado
+	del almac\'{e}n abre la app y toca ``Ver lotes pr\'{o}ximos a
+	vencer''. Su navegador env\'{i}a una petici\'{o}n
+	\texttt{GET /api/batches/expiring}.
 	
-	El controller, envuelto en el \texttt{asyncHandler} que el equipo
-	hab\'{i}a creado, extrajo el par\'{a}metro \texttt{days} de la
-	URL, valid\'{o} que fuera un n\'{u}mero razonable, y llam\'{o} a
-	\texttt{batchDao.getExpiringBatches(days)}. El DAO construy\'{o}
-	una consulta SQL con \texttt{JOIN}s sobre las tablas
-	\texttt{batch}, \texttt{product} y la funci\'{o}n
-	\texttt{DATEDIFF}, y la ejecut\'{o} a trav\'{e}s del pool de
-	conexiones.
+	Express recibe esa petici\'{o}n, pasa por el middleware de CORS y
+	JSON parsing, y luego la ruta \texttt{batches.routes.js} la
+	deriva al controller correspondiente. El controller, protegido
+	por \texttt{asyncHandler}, extrae el par\'{a}metro
+	\texttt{days} de la query string, lo revisa y llama a
+	\texttt{batchDao.getExpiringBatches(days)}.
 	
-	MySQL devolvi\'{o} las filas en milisegundos. El DAO las entreg\'{o}
-	tal cual al controller, quien respondi\'{o}
-	\texttt{res.json(rows)} con c\'{o}digo 200. El encargado vio en su
-	pantalla los lotes ordenados por fecha de caducidad, exactamente
-	como necesitaba. Todo ese recorrido ---desde la URL hasta la base
-	de datos y de vuelta--- ocurri\'{o} tan r\'{a}pido que ni siquiera
-	perdi\'{o} el ritmo de su recorrido por el almac\'{e}n.
+	El DAO arma la consulta SQL usando \texttt{JOIN}s entre las
+	tablas \texttt{batch} y \texttt{product}, y aplica la funci\'{o}n
+	\texttt{DATEDIFF} de MySQL para filtrar solo los lotes que vencen
+	dentro de los pr\'{o}ximos d\'{i}as. Esa consulta se ejecuta a
+	trav\'{e}s del pool de conexiones. MySQL devuelve las filas, el
+	DAO las pasa al controller, y el controller las env\'{i}a como
+	JSON con c\'{o}digo \texttt{200 OK}.
 	
-	Si algo hubiera fallado ---por ejemplo, que la base de datos
-	estuviera ca\'{i}da---, \texttt{asyncHandler} habr\'{i}a atrapado
-	la excepci\'{o}n y el middleware de errores habr\'{i}a respondido
-	un mensaje claro con c\'{o}digo 500. Sin p\'{a}nico, sin c\'{o}digo
-	roto en mil lugares.
+	Si en alg\'{u}n punto falla algo ---por ejemplo, la base de datos
+	est\'{a} ca\'{i}da---, \texttt{asyncHandler} captura el error y
+	lo manda al middleware de errores. Como no es un \texttt{AppError},
+	el middleware responde \texttt{500 Internal Server Error}. Lo
+	importante es que el flujo sigue siendo limpio: el DAO nunca toca
+	\texttt{res}, el controller nunca ejecuta SQL, y la ruta nunca
+	tiene l\'{o}gica de negocio.
 	
-	El equipo aprendi\'{o} a pensar que cada capa de ese servidor
-	dominaba su propio dialecto: HTTP arriba, SQL abajo, y JavaScript
-	en el medio como int\'{e}rprete neutral. As\'{i} fue como una
-	aplicaci\'{o}n peque\~{n}a pudo crecer sin convertirse en un
-	monstruo inmanejable. Eso fue todo lo que hubo detr\'{a}s de
-	\app{} cuando nadie lo ve\'{i}a: una arquitectura simple, pero
-	pensada para no volverse loca.
+	As\'{i} se logr\'{o} una arquitectura donde cada capa tiene una
+	\'{u}nica tarea. No es la soluci\'{o}n m\'{a}s sofisticada del
+	mundo, pero cumple con lo que necesita \app{}: que sea entendible,
+	mantenible y que no se rompa cuando hay varios usuarios al mismo
+	tiempo.
 	
 
 	%  SECCION 9 — CONCLUSION
