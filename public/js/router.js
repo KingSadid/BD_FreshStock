@@ -1,6 +1,12 @@
 const AppRouter = {
   navigateTo(screenId) {
     if (AppState.isNavigating || screenId === AppState.currentScreen) return;
+
+    const publicScreens = ['screen-login', 'screen-register'];
+    if (!publicScreens.includes(screenId) && !AppState.token) {
+      screenId = 'screen-login';
+    }
+
     AppState.isNavigating = true;
 
     const current = document.getElementById(AppState.currentScreen);

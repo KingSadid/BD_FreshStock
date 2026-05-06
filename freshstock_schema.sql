@@ -204,8 +204,8 @@ INSERT INTO branch (name, address, is_active) VALUES
 ('Main Store', '123 Main St, City', TRUE);
 
 INSERT INTO user (name, email, password_hash, role, is_active) VALUES
-('Admin User', 'admin@freshstock.com', '$2y$10$N9qo8uLOickgx2ZMRZoMy.Mr/.cNxNfIxUqYaFjvMqZzGtPqZzQ2q', 'admin', TRUE);
--- Note: above hash is fake, replace with actual bcrypt hash
+('Admin User', 'admin@freshstock.com', '$2b$10$A8XvRgy2FFIVD1O.rKDY8.tJN8r1S4wieE1dOAM1uzOQpYfK0utnm', 'admin', TRUE);
+-- Note: password is 'password123', hashed with bcryptjs (10 salt rounds)
 
 INSERT INTO supplier (name, contact_person, phone, email, is_active) VALUES
 ('Dairy Farms Co.', 'John Doe', '555-1234', 'contact@dairyfarms.com', TRUE);

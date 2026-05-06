@@ -782,7 +782,167 @@
 	tiempo.
 	
 
-	%  SECCION 9 — CONCLUSION
+	%  SECCION 9 — AUTENTICACION SEGURA
+
+	\section{Implementaci\'{o}n de Login Seguro con Hashing
+	Criptogr\'{a}fico}
+	\label{sec:auth}
+	
+	% ------- 9.1 -----------------------------------------------
+	\subsection{El problema de las contrase\~{n}as en texto plano}
+	\label{subsec:problema-contrasenas}
+	
+	Cuando el equipo revis\'{o} el estado inicial del sistema, se
+	encontr\'{o} con que la tabla \texttt{USER} de la base de datos
+	ya ten\'{i}a definida una columna \texttt{password\_hash} de tipo
+	\texttt{VARCHAR(255)}, pero el c\'{o}digo del backend no hac\'{i}a
+	nada con ella. El formulario de login del frontend simplemente
+	esperaba 800 milisegundos con un spinner y luego navegaba al
+	sin importar las credenciales ingresadas. No exist\'{i}a
+	ning\'{u}n endpoint de autenticaci\'{o}n, no se verificaban
+	contrase\~{n}as y no se generaban tokens de sesi\'{o}n.
+	
+	Esto representaba un riesgo cr\'{i}tico: si alguien acced\'{i}a
+	a la base de datos, pod\'{i}a leer todas las contrase\~{n}as de
+	los usuarios directamente. El equipo necesitaba un sistema donde
+	la contrase\~{n}a original nunca se almacenara, y donde cada
+	inicio de sesi\'{o}n se validara de forma segura.
+	
+	% ------- 9.2 -----------------------------------------------
+	\subsection{Selecci\'{o}n del algoritmo: por qu\'{e} bcryptjs}
+	\label{subsec:seleccion-bcrypt}
+	
+	El equipo evalu\'{o} tres opciones para el hashing de
+	contrase\~{n}as: \textbf{argon2}, considerada la m\'{a}s segura
+	en la actualidad pero con dependencias nativas que complicaban
+	la instalaci\'{o}n en Windows; \textbf{bcrypt}, muy probada en
+	producci\'{o}n pero que requer\'{i}a compilaci\'{o}n de
+	m\'{o}dulos C++ que generaba errores frecuentes en distintos
+	sistemas operativos; y \textbf{bcryptjs}, una reimplementaci\'{o}n
+	pura en JavaScript que produce resultados id\'{e}nticos a bcrypt
+	sin necesidad de compilaci\'{o}n alguna.
+	
+	Se eligi\'{o} \textbf{bcryptjs} por tres razones concretas.
+	Primera, al ser JavaScript puro, funcionaba sin problemas en
+	cualquier m\'{a}quina donde corriera Node.js, sin importar el
+	sistema operativo. Segunda, produc\'{i}a hashes compatibles con
+	el formato \texttt{\$2b\$} de bcrypt, lo cual facilitaba una
+	futura migraci\'{o}n a la librer\'{i}a nativa si el rendimiento
+	lo exig\'{i}a. Tercera, ya estaba incluida en el
+	\texttt{package.json} del proyecto desde la planificaci\'{o}n
+	inicial, as\'{i} que no fue necesario instalar nada adicional.
+	
+	% ------- 9.3 -----------------------------------------------
+	\subsection{C\'{o}mo funciona el algoritmo de hashing}
+	\label{subsec:algoritmo}
+	
+	El algoritmo implementado sigue el siguiente flujo. Cuando un
+	usuario se registra o cambia su contrase\~{n}a, la
+	funci\'{o}n \texttt{hashService.hash(plainText)} genera un
+	\textbf{salt} aleatorio de 16 bytes usando el generador criptogr\'{a}fico
+	del sistema operativo (\texttt{crypto.randomBytes}). Luego, toma
+	la contrase\~{n}a en texto plano y el salt, y ejecuta el algoritmo
+	Blowfish modificado (Eksblowfish) durante un n\'{u}mero
+	configurable de rondas ---en este caso, 10---. Cada ronda
+	aplica una serie de operaciones XOR y sustituciones a trav\'{e}s
+	de cajas S, lo que genera una carga computacional intencional.
+	El resultado final es un string con el siguiente formato:
+	
+	\begin{verbatim}
+	$2b$10$A8XvRgy2FFIVD1O.rKDY8.tJN8r1...
+	\end{verbatim}
+	
+	Donde \texttt{2b} identifica la versi\'{o}n del algoritmo,
+	\texttt{10} indica el n\'{u}mero de rondas (costo), los 22
+	caracteres siguientes representan el salt en Base64, y el
+	resto es el hash resultante. Lo importante es que el salt
+	est\'{a} embebido dentro del mismo string: no es necesario
+	almacenarlo por separado.
+	
+	Para verificar una contrase\~{n}a, la funci\'{o}n
+	\texttt{hashService.compare(plainText, hashedValue)} extrae el
+	salt del hash almacenado, vuelve a ejecutar Blowfish con ese
+	mismo salt y la contrase\~{n}a ingresada, y compara el resultado.
+	Si coinciden, la contrase\~{n}a es v\'{a}lida.
+	
+	% ------- 9.4 -----------------------------------------------
+	\subsection{Justificaci\'{o}n t\'{e}cnica de las decisiones}
+	\label{subsec:justificacion}
+	
+	La decisi\'{o}n de usar 10 rondas de costo no fue arbitraria.
+	Con 10 rondas, el hashing tarda aproximadamente 100
+	milisegundos en un servidor convencional. Esto es lo
+	suficientemente r\'{a}pido para que un usuario no note el
+	retraso durante el login, pero lo suficientemente lento como
+	para que un atacante con hardware especializado no pueda
+	probar miles de contrase\~{n}as por segundo. Si en el futuro
+	el hardware se vuelve m\'{a}s r\'{a}pido, basta con cambiar
+	el n\'{u}mero de rondas a 12 o 14 ---los hashes viejos siguen
+	funcionando porque el costo est\'{a} almacenado dentro del
+	propio hash---.
+	
+	El uso de \textbf{JWT (JSON Web Tokens)} para la sesi\'{o}n
+	tambi\'{e}n fue una decisi\'{o}n deliberada. A diferencia de
+	las sesiones tradicionales con cookies del lado del servidor,
+	JWT permite que el token se almacene en el
+	\texttt{localStorage} del navegador y se env\'{i}e como
+	cabecera en cada petici\'{o}n. Esto evita necesitar una tabla
+	de sesiones en la base de datos y simplifica la
+	arquitectura. El token incluye el ID del usuario, su correo
+	y su rol, y tiene un tiempo de expiraci\'{o}n de 8 horas.
+	
+	Por \'{u}ltimo, se cre\'{o} un servicio aislado
+	(\texttt{hash.service.js}) que encapsula toda la
+	l\'{o}gica de hashing. Los controllers nunca llaman directamente
+	a bcryptjs; llaman a este servicio. Esto cumple con el principio
+	de responsabilidad \'\'{u}nica: si alg\'{u}n d\'{i}a se quiere
+	cambiar a argon2, solo se modifica un archivo.
+	
+	% ------- 9.5 -----------------------------------------------
+	\subsection{Flujo completo de autenticaci\'{o}n}
+	\label{subsec:flujo-auth}
+	
+	El flujo de registro funciona as\'{i}. El usuario llena el
+	formulario en la vista \texttt{screen-register} con su nombre,
+	correo, contrase\~{n}a y rol. El frontend env\'{i}a una
+	petici\'{o}n \texttt{POST /api/auth/register} al servidor. El
+	controller de autenticaci\'{o}n valida que no falten campos, que
+	la contrase\~{n}a tenga al menos 6 caracteres y que el correo no
+	est\'{e} registrado. Si todo est\'{a} bien, genera el hash de la
+	contrase\~{n}a, inserta el usuario en la tabla \texttt{USER} y
+	devuelve un JWT junto con los datos del usuario.
+	
+	El flujo de inicio de sesi\'{o}n es similar. El usuario ingresa
+	su correo y contrase\~{n}a en \texttt{screen-login}. El frontend
+	env\'{i}a \texttt{POST /api/auth/login}. El DAO busca el usuario
+	por correo ---incluyendo el \texttt{password\_hash} que
+	normalmente se excluye en las consultas---. El controller
+	verifica la contrase\~{n}a contra el hash almacenado usando
+	\texttt{hashService.compare}. Si coincide y el usuario est\'{a}
+	activo, devuelve el JWT. Si no coincide, responde con
+	\texttt{401 Credenciales inv\'{a}lidas}, sin revelar si el
+	problema es el correo o la contrase\~{n}a ---una medida
+	b\'{a}sica contra la enumeraci\'{o}n de usuarios---.
+	
+	En el frontend, el token y los datos del usuario se almacenan en
+	\texttt{localStorage}. Cada vez que la p\'{a}gina se recarga, el
+	estado de la aplicaci\'{o}n (\texttt{AppState}) recupera estos
+	valores y, si existen, redirige autom\'{a}ticamente al dashboard
+	sin pedir login nuevamente. El bot\'{o}n de cerrar
+	sesi\'{o}n limpia el \texttt{localStorage} y devuelve al usuario
+	a la pantalla de login. Adem\'{a}s, el router del frontend
+	protege las vistas: si un usuario sin token intenta acceder a
+	cualquier pantalla que no sea login o registro, lo redirige
+	autom\'{a}ticamente al login.
+	
+	De esta manera, el equipo logr\'{o} un sistema de
+	autenticaci\'{o}n completo donde la contrase\~{n}a original
+	nunca sale del navegador del usuario, se almacena \'\'unicamente
+	como hash irreversible en MySQL, y cada sesi\'{o}n se gestiona
+	con tokens firmados criptogr\'{a}ficamente.
+	
+
+	%  SECCION 10 — CONCLUSION
 
 	\section{Conclusi\'{o}n}
 	\label{sec:conclusion}
@@ -802,9 +962,8 @@
 	sientan bases escalables y auditables que dotan al sistema del
 	rigor t\'{e}cnico necesario para operar en un entorno real.
 	
-	De cara a la \'{u}ltima etapa del proyecto, el equipo abordar\'{a} la
-	implementaci\'{o}n del sistema de autenticaci\'{o}n segura mediante
-	hashing criptogr\'{a}fico propio, el dise\~{n}o e implementaci\'{o}n de la
+	De cara a la \'{u}ltima etapa del proyecto, el equipo abordar\'{a} el
+	dise\~{n}o e implementaci\'{o}n de la
 	capa de persistencia NoSQL bajo un enfoque de \textit{Query Driven
 		Design}, y la construcci\'{o}n del proceso ETL que consolidar\'{a} los
 	datos operativos en informaci\'{o}n estrat\'{e}gica para la toma de

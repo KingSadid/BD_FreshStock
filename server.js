@@ -3,6 +3,7 @@ const path = require("path");
 const cors = require("cors");
 
 const testRoutes = require("./routes/test.routes");
+const authRoutes = require("./routes/auth.routes");
 const productRoutes = require("./routes/products.routes");
 const batchRoutes = require("./routes/batches.routes");
 const supplierRoutes = require("./routes/suppliers.routes");
@@ -19,6 +20,7 @@ api.use(express.json());
 api.use(express.static("public"));
 
 api.use("/api/test", testRoutes);
+api.use("/api/auth", authRoutes);
 api.use("/api/products", productRoutes);
 api.use("/api/batches", batchRoutes);
 api.use("/api/suppliers", supplierRoutes);

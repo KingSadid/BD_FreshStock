@@ -110,6 +110,7 @@ document.addEventListener('DOMContentLoaded', () => {
         openNewProductPanel();
       }
       if (act === 'close-new-product') closeNewProductPanel();
+      if (act === 'logout') logout();
     }
   });
 
@@ -129,16 +130,103 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const loginForm = document.getElementById('login-form');
   if (loginForm) {
-    loginForm.addEventListener('submit', (e) => {
+    loginForm.addEventListener('submit', async (e) => {
       e.preventDefault();
       const btn = loginForm.querySelector('button[type="submit"]');
       const original = btn.innerHTML;
-      btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Cargando...';
+      btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Verificando...';
+      btn.disabled = true;
 
-      setTimeout(() => {
-        navigateTo('screen-dashboard');
+      const email = document.getElementById('login-email').value;
+      const password = document.getElementById('login-password').value;
+
+      try {
+        const res = await api.login({ email, password });
+        const data = await res.json();
+
+        if (res.ok) {
+          AppState.user = data.user;
+          AppState.token = data.token;
+          localStorage.setItem('freshstock-user', JSON.stringify(data.user));
+          localStorage.setItem('freshstock-token', data.token);
+          updateSidebarUser(data.user);
+          showToast('Bienvenido', `Hola, ${data.user.name}`, 'success');
+          navigateTo('screen-dashboard');
+        } else {
+          showToast('Error', data.error || 'Credenciales inválidas', 'error');
+        }
+      } catch (err) {
+        showToast('Error', 'No se pudo conectar al servidor', 'error');
+      } finally {
         btn.innerHTML = original;
-      }, 800);
+        btn.disabled = false;
+      }
+    });
+  }
+
+  const registerForm = document.getElementById('register-form');
+  if (registerForm) {
+    registerForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const btn = registerForm.querySelector('button[type="submit"]');
+      const original = btn.innerHTML;
+      btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creando cuenta...';
+      btn.disabled = true;
+
+      const formData = new FormData(registerForm);
+      const data = Object.fromEntries(formData);
+
+      if (data.password !== data.confirmPassword) {
+        showToast('Error', 'Las contraseñas no coinciden', 'error');
+        btn.innerHTML = original;
+        btn.disabled = false;
+        return;
+      }
+
+      try {
+        const res = await api.register({
+          name: data.name,
+          email: data.email,
+          password: data.password,
+          role: data.role || 'seller'
+        });
+        const result = await res.json();
+
+        if (res.ok) {
+          AppState.user = result.user;
+          AppState.token = result.token;
+          localStorage.setItem('freshstock-user', JSON.stringify(result.user));
+          localStorage.setItem('freshstock-token', result.token);
+          updateSidebarUser(result.user);
+          showToast('Cuenta creada', 'Registro exitoso', 'success');
+          navigateTo('screen-dashboard');
+        } else {
+          showToast('Error', result.error || 'No se pudo registrar', 'error');
+        }
+      } catch (err) {
+        showToast('Error', 'No se pudo conectar al servidor', 'error');
+      } finally {
+        btn.innerHTML = original;
+        btn.disabled = false;
+      }
     });
   }
 });
+
+function updateSidebarUser(user) {
+  const initials = user.name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
+  document.querySelectorAll('.user-avatar, .user-avatar-sm').forEach(el => el.textContent = initials);
+  document.querySelectorAll('.user-name').forEach(el => el.textContent = user.name);
+  document.querySelectorAll('.user-role').forEach(el => {
+    const roles = { admin: 'Administrador', warehouse: 'Almacén', seller: 'Vendedor' };
+    el.textContent = roles[user.role] || user.role;
+  });
+}
+
+function logout() {
+  AppState.user = null;
+  AppState.token = null;
+  localStorage.removeItem('freshstock-user');
+  localStorage.removeItem('freshstock-token');
+  navigateTo('screen-login');
+}
