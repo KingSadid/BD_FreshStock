@@ -59,6 +59,7 @@ const AppRouter = {
       if (screenId === 'screen-lots') loadLots();
       if (screenId === 'screen-alerts') loadAlerts();
       if (screenId === 'screen-suppliers') loadSuppliers();
+      if (screenId === 'screen-users') loadUsers();
       if (screenId === 'screen-lot-register') prepareLotForm();
     }, 200);
   }

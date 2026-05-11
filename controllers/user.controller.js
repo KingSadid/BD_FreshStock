@@ -2,8 +2,13 @@ const userDao = require('../dao/user.dao');
 const asyncHandler = require('../utils/asyncHandler');
 
 const getAll = asyncHandler(async (req, res) => {
-  const users = await userDao.getAll();
-  res.json(users);
+  const { role, id } = req.user;
+  if (role === 'admin') {
+    const users = await userDao.getAll();
+    return res.json(users);
+  }
+  const user = await userDao.getById(id);
+  res.json(user ? [user] : []);
 });
 
 const getById = asyncHandler(async (req, res) => {

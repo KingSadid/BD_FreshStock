@@ -49,5 +49,9 @@ const api = {
 
   getCategories: () => fetch(`${API_BASE}/api/categories`).then(r => r.json()),
 
-  getRecentMovements: () => fetch(`${API_BASE}/api/movements/recent`).then(r => r.json())
+  getRecentMovements: () => fetch(`${API_BASE}/api/movements/recent`).then(r => r.json()),
+
+  getUsers: () => fetch(`${API_BASE}/api/users`, {
+    headers: { 'Authorization': `Bearer ${AppState.token}` }
+  }).then(r => r.json())
 };
