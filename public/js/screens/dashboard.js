@@ -4,6 +4,11 @@
 const DashboardScreen = {
   async load() {
     try {
+      const welcome = document.getElementById('welcome-text');
+      if (welcome && AppState.user) {
+        welcome.textContent = `¡Buenos días, ${AppState.user.name}!`;
+      }
+
       const kpis = await api.getKPIs();
       document.getElementById('kpi-products').textContent = kpis.active_products;
       document.getElementById('kpi-batches').textContent = kpis.total_batches;
