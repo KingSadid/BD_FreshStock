@@ -941,6 +941,92 @@
 	como hash irreversible en MySQL, y cada sesi\'{o}n se gestiona
 	con tokens firmados criptogr\'{a}ficamente.
 	
+	% ------- 9.6 -----------------------------------------------
+	\subsection{Control de acceso basado en roles}
+	\label{subsec:rbac}
+	
+	Una vez que el sistema de autenticaci\'{o}n estaba funcionando,
+	el equipo identific\'{o} un problema inmediato: cualquier
+	usuario que iniciara sesi\'{o}n pod\'{i}a acceder a la
+	informaci\'{o}n de todos los dem\'{a}s. La pantalla de
+	usuarios mostraba la lista completa sin importar qui\'{e}n
+	estuviera conectado. En un negocio real, eso significaba que
+	un vendedor pod\'{i}a ver los datos del administrador, sus
+	correos y sus roles. No hab\'{i}a ning\'{u}n tipo de
+	restricci\'{o}n.
+	
+	Para resolverlo, se cre\'{o} un middleware de autenticaci\'{o}n
+	ubicado en \texttt{utils/auth.middleware.js}. Su trabajo es
+	simple pero esencial: antes de que la petici\'{o}n llegue al
+	controller, el middleware extrae el token del header
+	\texttt{Authorization}, lo decodifica con
+	\texttt{jwt.verify()} y adjunta los datos del usuario
+	(\texttt{id}, \texttt{email}, \texttt{role}) al objeto
+	\texttt{req}. Si el token no existe o est\'{a} expirado, la
+	petici\'{o}n se detiene inmediatamente con un error
+	\texttt{401}.
+	
+	Con el usuario identificado, se modific\'{o} el controller de
+	usuarios para aplicar una regla de negocio basada en roles. Si
+	el rol del usuario es \texttt{admin}, el endpoint ejecuta un
+	\texttt{SELECT} que devuelve todos los registros de la tabla
+	\texttt{USER}. Si el rol es cualquier otro
+	(\texttt{warehouse} o \texttt{seller}), el endpoint filtra por
+	el \texttt{user\_id} extra\'{i}do del token, devolviendo
+	\'{u}nicamente el registro del propio usuario. As\'{i}, un
+	vendedor que entre a la secci\'{o}n de usuarios solo se ve a
+	s\'{i} mismo, mientras que el administrador tiene visibilidad
+	completa del equipo.
+	
+	Esta decisi\'{o}n se fundament\'{o} en el principio de
+	\textbf{m\'{i}nimo privilegio}: cada usuario debe tener acceso
+	solo a la informaci\'{o}n que necesita para cumplir su funci\'{o}n.
+	Adem\'{a}s, la l\'{o}gica de autorizaci\'{o}n qued\'{o}
+	aislada en el middleware, separada del controller y del DAO,
+	cumpliendo as\'{i} con el principio de responsabilidad
+	\'{u}nica.
+	
+	% ------- 9.7 -----------------------------------------------
+	\subsection{Personalizaci\'{o}n din\'{a}mica de la interfaz}
+	\label{subsec:personalizacion}
+	
+	Durante las pruebas de integraci\'{o}n, el equipo
+	detect\'{o} un detalle que parec\'{i}a menor pero que romp\'{i}a
+	la experiencia del usuario: el mensaje de bienvenida del
+	dashboard mostraba de forma est\'{a}tica el texto ``Buenos
+	d\'{i}as, Sadid!'', sin importar qui\'{e}n hubiera
+	iniciado sesi\'{o}n. Esto ocurri\'{o} porque el nombre estaba
+	escrito directamente en el archivo HTML, sin ninguna
+	vinculaci\'{o}n con los datos de la sesi\'{o}n activa.
+	
+	La soluci\'{o}n fue conectar el texto de bienvenida con el
+	estado de la aplicaci\'{o}n. Cuando un usuario inicia
+	sesi\'{o}n, el frontend almacena sus datos ---nombre, correo
+	y rol--- en el objeto global \texttt{AppState} y en el
+	\texttt{localStorage} del navegador. Al cargar el dashboard,
+	una instrucci\'{o}n de JavaScript reemplaza el texto
+	est\'{a}tico por el valor de \texttt{AppState.user.name},
+	mostrando as\'{i} un saludo personalizado: ``\~{B}uenos
+	d\'{i}as, \~{J}uan~\~{P}ablo!'' o ``\~{B}uenos d\'{i}as,
+	\~{M}ar\'{i}a!'', seg\'{u}n corresponda.
+	
+	Este mismo mecanismo se aplica a los paneles laterales de
+	navegaci\'{o}n. La funci\'{o}n \texttt{updateSidebarUser()}
+	actualiza din\'{a}micamente el avatar con las iniciales del
+	usuario, su nombre completo y su rol traducido
+	(``Administrador'', ``Almac\'{e}n'' o ``Vendedor''). Esto
+	garantiza que, sin importar en qu\'{e} pantalla se encuentre,
+	el usuario siempre vea su propia identidad reflejada en la
+	interfaz.
+	
+	La persistencia de estos datos en \texttt{localStorage}
+	tambi\'{e}n resolvi\'{o} otro problema: al recargar la
+	p\'{a}gina, el sistema recupera el token y los datos del
+	usuario, redirigi\'{e}ndolo autom\'{a}ticamente al dashboard
+	sin necesidad de volver a iniciar sesi\'{o}n. Solo cuando el
+	token expira o el usuario cierra sesi\'{o}n expl\'{i}citamente
+	se borran los datos locales y se regresa al login.
+	
 
 	%  SECCION 10 — CONCLUSION
 
