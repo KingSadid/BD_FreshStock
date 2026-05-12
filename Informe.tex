@@ -82,7 +82,7 @@
 		Brian~Jesid~Zambrano~Poveda,\;
 		Juan~Pablo~Ch\'{a}ves~Estupi\~{n}\'{a}n,\;
 		Sadid~Enrique~Acosta~Osorio%
-
+		
 	}
 	
 	\markboth{%
@@ -125,13 +125,13 @@
 		trazabilidad, arquitectura de software.
 	\end{IEEEkeywords}
 	
-
+	
 	%  SECCION 1 — PLANTEAMIENTO DEL PROBLEMA
-
+	
 	\section{Planteamiento del Problema}
 	\label{sec:problema}
 	
-	\IEEEPARstart{T}{odo} comenz\'{o} con una pregunta simple: \~{c}\'{o}mo
+	\IEEEPARstart{T}{odo} comenz\'{o} con una pregunta simple: c\'{o}mo
 	puede una fruter\'{i}a de barrio saber cu\'{a}les de sus yogures vencen
 	ma\~{n}ana sin tener que revisar cada estante uno por uno? La respuesta,
 	por sorprendente que parezca, es que en la mayor\'{i}a de los peque\~{n}os
@@ -212,9 +212,9 @@
 		\end{tabular}
 	\end{table}
 	
-
+	
 	%  SECCION 2 — JUSTIFICACION DE LA SOLUCION
-
+	
 	\section{Justificaci\'{o}n de la Soluci\'{o}n}
 	\label{sec:justificacion}
 	
@@ -305,7 +305,7 @@
 		\end{tabular}
 	\end{table}
 	
-
+	
 	%  SECCION 3 — ESTADO DEL ARTE
 	
 	\section{Estado del Arte}
@@ -495,7 +495,7 @@
 		\end{tabular}
 	\end{table}
 	
-
+	
 	%  SECCION 6 — DESARROLLO DE LA INTERFAZ Y PROTOTIPO
 	
 	\section{Desarrollo de la Interfaz y Prototipo}
@@ -632,9 +632,9 @@
 	
 	\FloatBarrier
 	
-
+	
 	%  SECCION 7 — MODELADO DE LA BASE DE DATOS
-
+	
 	\section{Modelado e Implementaci\'{o}n de la Base de Datos}
 	\label{sec:bd}
 	
@@ -716,9 +716,9 @@
 	con marca de tiempo precisa--- para garantizar exactitud
 	en todos los registros operativos~\cite{Elmasri:2016}.
 	
-
+	
 	%  SECCION 8 — ARQUITECTURA DEL BACKEND
-
+	
 	\section{Arquitectura del Backend y L\'{o}gica de Servidor}
 	\label{sec:backend}
 	
@@ -811,7 +811,7 @@
 	conexi\'{o}n nueva por cada consulta. Eso es ineficiente porque
 	cada conexi\'{o}n nueva implica un \emph{handshake} con el
 	motor. En su lugar, se configur\'{o} un \textbf{pool de
-	conexiones} en \texttt{mysql.service.js} usando
+		conexiones} en \texttt{mysql.service.js} usando
 	\texttt{mysql2/promise}. El pool mantiene varias conexiones
 	abiertas desde el inicio y las reutiliza. As\'{i}, cuando tres
 	vendedores consultan stock al mismo tiempo, el servidor usa
@@ -856,11 +856,11 @@
 	mantenible y que no se rompa cuando hay varios usuarios al mismo
 	tiempo.
 	
-
+	
 	%  SECCION 9 — AUTENTICACION SEGURA
-
+	
 	\section{Implementaci\'{o}n de Login Seguro con Hashing
-	Criptogr\'{a}fico}
+		Criptogr\'{a}fico}
 	\label{sec:auth}
 	
 	% ------- 9.1 -----------------------------------------------
@@ -929,7 +929,7 @@
 	El resultado final es un string con el siguiente formato:
 	
 	\begin{verbatim}
-	$2b$10$A8XvRgy2FFIVD1O.rKDY8.tJN8r1...
+		$2b$10$A8XvRgy2FFIVD1O.rKDY8.tJN8r1...
 	\end{verbatim}
 	
 	Donde \texttt{2b} identifica la versi\'{o}n del algoritmo,
@@ -1106,9 +1106,9 @@
 	token expira o el usuario cierra sesi\'{o}n expl\'{i}citamente
 	se borran los datos locales y se regresa al login.
 	
-
+	
 	%  SECCION 10 — CONCLUSION
-
+	
 	\section{Conclusi\'{o}n}
 	\label{sec:conclusion}
 	
@@ -1143,9 +1143,9 @@
 		Design}, y la construcci\'{o}n del proceso ETL que consolidar\'{a} los
 	datos operativos en informaci\'{o}n estrat\'{e}gica para la toma de
 	decisiones del negocio.
-
+	
 	%  APENDICES
-
+	
 	\appendices
 	
 	% ------- A -------------------------------------------------
@@ -1205,9 +1205,9 @@
 		nunca se almacene en texto plano.
 	\end{itemize}
 	
-
+	
 	%  REFERENCIAS
-
+	
 	\begin{thebibliography}{12}
 		
 		\bibitem{Silver:2016}
