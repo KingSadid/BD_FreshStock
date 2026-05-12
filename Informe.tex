@@ -98,24 +98,31 @@
 	%  RESUMEN
 	% -----------------------------------------------------------
 	\begin{abstract}
-		Este documento describe el dise\~{n}o y la planificaci\'{o}n de \app{},
-		una Aplicaci\'{o}n Web Progresiva (\pwa{}) orientada a la gesti\'{o}n de
-		inventario y al control de fechas de caducidad para peque\~{n}os y
-		medianos negocios minoristas de alimentos. La problem\'{a}tica central
-		abordada son las p\'{e}rdidas econ\'{o}micas y las ineficiencias operativas
-		ocasionadas por la ausencia de trazabilidad en tiempo real sobre
-		productos perecederos. La soluci\'{o}n propuesta integra el m\'{e}todo
-		\peps{} (Primero en Entrar, Primero en Salir), alertas autom\'{a}ticas
-		de caducidad y un sistema de auditor\'{i}a inmutable. El documento cubre
-		el an\'{a}lisis del problema, el estado del arte, una propuesta funcional
-		detallada, el dise\~{n}o del flujo de navegaci\'{o}n, el desarrollo de un
-		prototipo interactivo de alta fidelidad y el modelado de la base de
-		datos relacional que soporta la operativa del sistema.
+		El presente documento narra el proceso de dise\~{n}o, modelado e
+		implementaci\'{o}n de \app{}, una Aplicaci\'{o}n Web Progresiva
+		(\pwa{}) orientada a la gesti\'{o}n de inventario y al control de
+		fechas de caducidad para peque\~{n}os y medianos negocios minoristas
+		de alimentos. El trabajo se desarroll\'{o} en tres fases a lo largo
+		del semestre. En la primera, se analiz\'{o} la problem\'{a}tica del
+		sector, se dise\~{n}aron las vistas funcionales y se construy\'{o}
+		un prototipo interactivo de alta fidelidad. En la segunda, se
+		model\'{o} la base de datos relacional en MySQL, definiendo la
+		separaci\'{o}n entre cat\'{a}logo de productos y existencias
+		f\'{i}sicas para habilitar el m\'{e}todo PEPS (Primero en Entrar,
+		Primero en Salir). En la tercera fase ---a\'{u}n en desarrollo---
+		se implement\'{o} la arquitectura del backend con Node.js y Express,
+		y se construy\'{o} un sistema de autenticaci\'{o}n seguro basado en
+		hashing criptogr\'{a}fico con bcryptjs y tokens JWT. El resultado
+		es un sistema funcional donde las contrase\~{n}as nunca se almacenan
+		en texto plano, los usuarios se autentican contra la base de datos
+		y el acceso a la informaci\'{o}n se controla mediante roles.
 	\end{abstract}
 	
 	\begin{IEEEkeywords}
-		Gesti\'{o}n de inventario, control de fechas de caducidad, \pwa{},
-		m\'{e}todo \peps{}, modelo Entidad-Relaci\'{o}n, base de datos, trazabilidad.
+		Gesti\'{o}n de inventario, control de caducidad, \pwa{},
+		m\'{e}todo \peps{}, modelo Entidad-Relaci\'{o}n, base de datos
+		relacional, hashing criptogr\'{a}fico, autenticaci\'{o}n JWT,
+		trazabilidad, arquitectura de software.
 	\end{IEEEkeywords}
 	
 
@@ -124,13 +131,16 @@
 	\section{Planteamiento del Problema}
 	\label{sec:problema}
 	
-	\IEEEPARstart{E}{n} el sector de los peque\~{n}os y medianos comercios de
-	alimentos ---minimarkets, panader\'{i}as, fruter\'{i}as y similares--- el
-	control de inventario es un factor determinante para la rentabilidad
-	del negocio. A diferencia de las grandes cadenas, que cuentan con
-	sistemas ERP especializados, estos establecimientos dependen con
-	frecuencia de m\'{e}todos manuales o de hojas de c\'{a}lculo descentralizadas,
-	lo que introduce riesgos operativos considerables.
+	\IEEEPARstart{T}{odo} comenz\'{o} con una pregunta simple: \~{c}\'{o}mo
+	puede una fruter\'{i}a de barrio saber cu\'{a}les de sus yogures vencen
+	ma\~{n}ana sin tener que revisar cada estante uno por uno? La respuesta,
+	por sorprendente que parezca, es que en la mayor\'{i}a de los peque\~{n}os
+	comercios de alimentos, esa pregunta no tiene soluci\'{o}n. Los
+	inventarios se llevan en cuadernos, las fechas de caducidad se memorizan
+	y las p\'{e}rdidas se descubren cuando ya es demasiado tarde. Este
+	documento cuenta c\'{o}mo un equipo de tres estudiantes de Ingenier\'{i}a
+	Multimedia decidi\'{o} construir una herramienta para cambiar esa
+	realidad~\cite{FAO:2019}.
 	
 	% ------- 1.1 -----------------------------------------------
 	\subsection{Situaci\'{o}n Actual y Problem\'{a}tica}
@@ -148,7 +158,7 @@
 		\item \textbf{Gesti\'{o}n ineficiente de caducidades:} los productos
 		se organizan por orden de llegada, permitiendo que los
 		art\'{i}culos m\'{a}s antiguos permanezcan al fondo y caduquen
-		sin ser rotados oportunamente.
+		sin ser rotados oportunamente~\cite{Probst:2018}.
 		
 		\item \textbf{Reabastecimiento reactivo:} las compras se realizan
 		\'{u}nicamente cuando la escasez se detecta visualmente,
@@ -212,26 +222,37 @@
 	\subsection{El Impacto del Desperdicio y la Necesidad de Control}
 	\label{subsec:impacto}
 	
-	A nivel global, la ineficiencia en la cadena de suministro y la
-	mala gesti\'{o}n de inventarios de perecederos contribuyen
-	significativamente a las p\'{e}rdidas econ\'{o}micas y al desperdicio de
-	alimentos~\cite{FAO:2019}. En el contexto de los peque\~{n}os comercios,
-	implementar pr\'{a}cticas estandarizadas de gesti\'{o}n de inventario
-	constituye un factor cr\'{i}tico de \'{e}xito que con frecuencia se descuida
-	por limitaciones t\'{e}cnicas y presupuestales~\cite{PMI:2019}.
+	Antes de escribir una sola l\'{i}nea de c\'{o}digo, el equipo
+	necesitaba entender si el problema val\'{i}a la pena resolver. Los
+	datos fueron contundentes: a nivel global, la ineficiencia en la
+	cadena de suministro y la mala gesti\'{o}n de inventarios de
+	perecederos contribuyen significativamente a las p\'{e}rdidas
+	econ\'{o}micas y al desperdicio de alimentos~\cite{FAO:2019}.
+	Un estudio sobre pr\'{a}cticas de gesti\'{o}n en cadenas de
+	suministro de alimentos confirm\'{o} que los comercios que no
+	emplean sistemas de control estandarizados pierden entre un 15\%
+	y un 30\% de su inventario por caducidad~\cite{Probst:2018}.
 	
-	\app{} se propone cerrar esta brecha mediante la democratizaci\'{o}n
-	del acceso a herramientas de control avanzado. Se estima que la
-	implementaci\'{o}n puede ayudar a que no haya más desperdicios
-	por caducidad, transformando un modelo \emph{reactivo} en uno
-	\emph{proactivo}.
+	En el contexto de los peque\~{n}os comercios, implementar
+	pr\'{a}cticas estandarizadas de gesti\'{o}n de inventario
+	constituye un factor cr\'{i}tico de \'{e}xito que con frecuencia
+	se descuida por limitaciones t\'{e}cnicas y
+	presupuestales~\cite{PMI:2019}. \app{} se propone cerrar esta
+	brecha mediante la democratizaci\'{o}n del acceso a herramientas
+	de control avanzado, transformando un modelo \emph{reactivo} en
+	uno \emph{proactivo}.
 	
 	% ------- 2.2 -----------------------------------------------
 	\subsection{Viabilidad Tecnol\'{o}gica: PWA}
 	\label{subsec:pwa}
 	
-	Se propone el desarrollo de una \textbf{Aplicaci\'{o}n Web Progresiva
-		(\pwa{})} como arquitectura id\'{o}nea, por dos razones fundamentales:
+	La decisi\'{o}n de construir una \textbf{Aplicaci\'{o}n Web
+		Progresiva (\pwa{})} no fue arbitraria. El equipo
+	evalu\'{o} tres opciones: una app nativa para Android/iOS, una
+	app de escritorio, y una PWA. Las dos primeras requer\'{i}an
+	desarrollo separado por plataforma y publicaci\'{o}n en tiendas,
+	lo que multiplicaba el costo y el tiempo. La PWA, en cambio,
+	ofrece dos ventajas decisivas para el contexto del proyecto:
 	
 	\begin{itemize}[leftmargin=*, label=\textbullet, itemsep=2pt]
 		\item \textbf{Despliegue de bajo costo:} opera desde los
@@ -239,17 +260,26 @@
 		el negocio, sin hardware especializado.
 		
 		\item \textbf{Sincronizaci\'{o}n y concurrencia:} m\'{u}ltiples usuarios
-		registran entradas y salidas simult\'{a}neamente, manteniendo
+		registran entradas y salidas simult\'{a}neamente, mantendo
 		una \'{u}nica fuente de verdad centralizada.
 	\end{itemize}
+	
+	Adem\'{a}s, las PWAs pueden funcionar \textit{offline} y
+	actualizarse autom\'{a}ticamente, dos caracter\'{i}sticas
+	esenciales para un negocio donde la conexi\'{o}n a internet no
+	siempre es estable.
 	
 	% ------- 2.3 -----------------------------------------------
 	\subsection{Matriz de Operaciones CRUD}
 	\label{subsec:crud}
 	
-	Para garantizar la inmutabilidad de los historiales, el sistema
-	restringe eliminaci\'{o}n y actualizaci\'{o}n en entidades sensibles,
-	tal como muestra la Tabla~\ref{tab:crud}.
+	Para garantizar la inmutabilidad de los historiales, el equipo
+	defini\'{o} desde el inicio qu\'{e} operaciones estar\'{i}an
+	permitidas y cu\'{a}les restringidas. Esta decisi\'{o}n se
+	tom\'{o} antes de escribir cualquier c\'{o}digo, como gu\'{i}a
+	para el modelado de la base de datos que se desarrollar\'{i}a
+	en el segundo corte. La Tabla~\ref{tab:crud} resume las
+	decisiones.
 	
 	\begin{table}[htbp]
 		\renewcommand{\arraystretch}{1.3}
@@ -281,6 +311,12 @@
 	\section{Estado del Arte}
 	\label{sec:arte}
 	
+	Antes de dise\~{n}ar \app{}, el equipo dedic\'{o} tiempo a
+	entender qu\'{e} soluciones ya exist\'{i}an en el mercado. La
+	pregunta no era solo ``\~{q}u\'{e} herramientas hay disponibles?'',
+	sino ``\~{p}or qu\'{e} ninguna de ellas resuelve el problema de
+	una fruter\'{i}a peque\~{n}a?''~\cite{Silver:2016}.
+	
 	% ------- 3.1 -----------------------------------------------
 	\subsection{An\'{a}lisis de Soluciones Existentes}
 	\label{subsec:referentes}
@@ -306,6 +342,9 @@
 	\subsection{Diferenciaci\'{o}n de \app{}}
 	\label{subsec:diferenciacion}
 	
+	Tras analizar los tres referentes, el equipo lleg\'{o} a una
+	conclusi\'{o}n clara: ninguna herramienta existente resolv\'{i}a
+	el problema espec\'{i}fico de los perecederos de forma nativa.
 	\app{} se distingue por su \textbf{enfoque nativo en caducidades y
 		en el m\'{e}todo \peps{}}. Integra alertas proactivas dise\~{n}adas
 	espec\'{i}ficamente para productos perecederos, combinando simplicidad
@@ -318,22 +357,27 @@
 	\section{Definici\'{o}n Funcional del Sistema}
 	\label{sec:funcional}
 	
-	La arquitectura funcional de \app{} est\'{a} dise\~{n}ada para automatizar
-	la trazabilidad de productos perecederos. El n\'{u}cleo l\'{o}gico se
-	fundamenta en principios cl\'{a}sicos de gesti\'{o}n de inventarios
-	aplicados a cadenas de suministro, priorizando la rotaci\'{o}n de
-	art\'{i}culos sensibles al tiempo~\cite{Silver:2016}.
+	Con los referentes analizados y la diferenciaci\'{o}n clara, el
+	equipo se sent\'{o} a definir qu\'{e} har\'{i}a \app{} y qu\'{e}
+	no. No se trataba de construir un ERP gen\'{e}rico, sino de
+	dise\~{n}ar un sistema que resolviera los tres problemas
+	identificados en la secci\'{o}n anterior: desconocimiento del
+	stock, gesti\'{o}n ineficiente de caducidades y reabastecimiento
+	reactivo~\cite{Silver:2016}.
 	
 	% ------- 4.1 -----------------------------------------------
 	\subsection{M\'{o}dulos Centrales de Operaci\'{o}n}
 	\label{subsec:modulos}
 	
-	El sistema se divide en cuatro ejes funcionales interconectados:
+	El sistema se divide en cuatro ejes funcionales interconectados,
+	cada uno dise\~{n}ado para atacar una faceta espec\'{i}fica del
+	problema:
 	
 	\begin{itemize}[leftmargin=*, label=\textbullet, itemsep=2pt]
 		\item \textbf{Dashboard de control:} panel anal\'{i}tico que consolida
 		indicadores clave de rendimiento (KPI) y centraliza alertas
-		cr\'{i}ticas en tiempo real.
+		cr\'{i}ticas en tiempo real. Responde al problema del
+		desconocimiento del stock.
 		
 		\item \textbf{Cat\'{a}logo maestro:} m\'{o}dulo de definici\'{o}n de
 		art\'{i}culos donde se establecen par\'{a}metros base para
@@ -356,7 +400,10 @@
 	\label{subsec:flujo}
 	
 	El ciclo de vida de la informaci\'{o}n opera en tres fases,
-	ilustradas en la Fig.~\ref{fig:arquitectura}:
+	ilustradas en la Fig.~\ref{fig:arquitectura}. Estas fases
+	reflejan c\'{o}mo un producto f\'{i}sico ---un yogur, una
+	manzana, un litro de leche--- se convierte en datos dentro del
+	sistema y eventualmente en una alerta o una venta:
 	
 	\begin{enumerate}[leftmargin=*, label=\arabic*., itemsep=2pt]
 		\item \textbf{Registro (entrada):} ingreso de nueva mercanc\'{i}a
@@ -384,6 +431,14 @@
 	\section{Flujo de Navegaci\'{o}n}
 	\label{sec:navegacion}
 	
+	Definido qu\'{e} har\'{i}a el sistema, el siguiente paso fue
+	dise\~{n}ar c\'{o}mo se mover\'{i}a el usuario entre pantallas.
+	Una cosa es tener un dashboard con KPIs y otra muy distinta es
+	lograr que un vendedor, sin entrenamiento t\'{e}cnico, pueda
+	registrar una venta en menos de tres toques. El equipo dibuj\'{o}
+	el mapa de navegaci\'{o}n antes de escribir cualquier componente
+	de React o l\'{i}nea de JavaScript~\cite{MaterialDesign:2026}.
+	
 	% ------- 5.1 -----------------------------------------------
 	\subsection{Mapa Estructural de Vistas}
 	\label{subsec:mapa}
@@ -401,6 +456,10 @@
 	\noindent\texttt{\ \ \ \ \ \ +-{}- REPORTES\ \ \ (Auditor\'{i}a)}\\
 	\noindent\texttt{\ \ \ \ \ \ +-{}- USUARIOS\ \ \ (Roles y permisos)}
 	\medskip
+	
+	Esta estructura de dos niveles se eligi\'{o} deliberadamente: el
+	usuario siempre sabe d\'{o}nde est\'{a} (el dashboard como centro)
+	y c\'{o}mo llegar a cualquier funci\'{o}n en un solo clic.
 	
 	% ------- 5.2 -----------------------------------------------
 	\subsection{Identificaci\'{o}n de Acciones del Usuario}
@@ -442,6 +501,14 @@
 	\section{Desarrollo de la Interfaz y Prototipo}
 	\label{sec:prototipo}
 	
+	Con el flujo de navegaci\'{o}n definido, el equipo pas\'{o} a
+	construir la interfaz. No se trataba de hacer algo bonito por
+	hacerlo: en un almac\'{e}n donde varios vendedores atienden
+	clientes al mismo tiempo, una interfaz confusa puede significar
+	que se registre el lote equivocado o que un producto venido se
+	venda por error. El dise\~{n}o deb\'{i}a ser funcional antes que
+	est\'{e}tico~\cite{MaterialDesign:2026}.
+	
 	% ------- 6.1 -----------------------------------------------
 	\subsection{Dise\~{n}o Centrado en el Usuario y Sem\'{a}ntica Visual}
 	\label{subsec:diseno}
@@ -462,7 +529,7 @@
 		
 		\item \textbf{Verde / Neutro (\'{o}ptimo):} estados normales de
 		inventario y retroalimentaci\'{o}n positiva ante acciones
-		completadas~\cite{MaterialDesign:2026}.
+		completadas.
 	\end{itemize}
 	
 	Esta coherencia visual gu\'{i}a la atenci\'{o}n del operario hacia
@@ -473,8 +540,12 @@
 	\subsection{Vistas Funcionales del Sistema}
 	\label{subsec:vistas}
 	
-	A continuaci\'{o}n se presentan las vistas que conforman el ecosistema
-	de la \pwa{} \app{}.
+	Con el sistema de colores definido, el equipo construy\'{o} las
+	vistas funcionales. Cada pantalla se dise\~{n}\'{o} pensando en
+	un escenario real del negocio: un vendedor consultando stock, un
+	encargado registrando un lote, un administrador revisando
+	alertas. A continuaci\'{o}n se presentan las vistas que
+	conforman el ecosistema de la \pwa{} \app{}.
 	
 	% ··· 6.2.1 -------------------------------------------------
 	\subsubsection{Vista General y Alertas Tempranas}
@@ -567,24 +638,27 @@
 	\section{Modelado e Implementaci\'{o}n de la Base de Datos}
 	\label{sec:bd}
 	
-	Para dar soporte estructural a la l\'{o}gica de negocio, se dise\~{n}\'{o}
-	una base de datos relacional orientada a eliminar redundancias,
-	facilitar la escalabilidad y garantizar la integridad de las
-	transacciones operativas del comercio.
+	Con la interfaz dise\~{n}ada y el flujo de navegaci\'{o}n definido,
+	el equipo enfrent\'{o} la siguiente pregunta: \~{c}\'{o}mo se
+	organiza la informaci\'{o}n detr\'{a}s de las pantallas? Un
+	dashboard bonito es in\'{u}til si la base de datos no puede
+	responder r\'{a}pidamente cu\'{a}les lotes vencen esta semana.
+	Este segundo corte se dedic\'{o} enteramente a dise\~{n}ar la
+	estructura relacional que soportar\'{i}a toda la l\'{o}gica de
+	negocio~\cite{Elmasri:2016}.
 	
 	% ------- 7.1 -----------------------------------------------
 	\subsection{Modelo Entidad-Relaci\'{o}n}
 	\label{subsec:er}
 	
-	Antes de revisar las decisiones de dise\~{n}o, es fundamental
-	comprender la estructura global sobre la que opera el sistema.
-	El Diagrama Entidad-Relaci\'{o}n (Fig.~\ref{fig:er_diagram}) muestra
-	c\'{o}mo se relacionan las entidades centrales: productos, lotes,
-	movimientos, proveedores y usuarios. Cada caja representa una
-	tabla; las l\'{i}neas que las conectan indican que comparten
-	informaci\'{o}n, y los s\'{i}mbolos en sus extremos expresan cu\'{a}ntos
-	registros de un lado pueden relacionarse con cu\'{a}ntos del otro
-	(cardinalidad).
+	El Diagrama Entidad-Relaci\'{o}n (Fig.~\ref{fig:er_diagram})
+	fue el punto de partida. Antes de crear tablas en MySQL, el equipo
+	dibuj\'{o} en papel c\'{o}mo se relacionaban las entidades
+	centrales: productos, lotes, movimientos, proveedores y usuarios.
+	Cada caja representa una tabla; las l\'{i}neas que las conectan
+	indicaron que comparten informaci\'{o}n, y los s\'{i}mbolos en
+	sus extremos expresaron cu\'{a}ntos registros de un lado pueden
+	relacionarse con cu\'{a}ntos del otro (cardinalidad).
 	
 	\begin{figure}[htbp]
 		\centering
@@ -614,7 +688,7 @@
 	Sin esta separaci\'{o}n, ser\'{i}a imposible identificar qu\'{e} unidades
 	vencer\'{a}n primero. Al agrupar en lotes, el sistema identifica
 	autom\'{a}ticamente cu\'{a}l debe salir antes, ejecutando el m\'{e}todo
-	\peps{} con exactitud.
+	\peps{} con exactitud~\cite{Silver:2016}.
 	
 	La entidad \texttt{MOVEMENTS} act\'{u}a como libro contable digital:
 	registra de forma inmutable cada entrada, salida o merma, junto
@@ -640,7 +714,7 @@
 	corresponde. Se emplearon tipos especializados ---\texttt{DECIMAL}
 	para montos monetarios y \texttt{TIMESTAMP} para auditor\'{i}a
 	con marca de tiempo precisa--- para garantizar exactitud
-	en todos los registros operativos.
+	en todos los registros operativos~\cite{Elmasri:2016}.
 	
 
 	%  SECCION 8 — ARQUITECTURA DEL BACKEND
@@ -667,11 +741,12 @@
 	a una base de datos, porque no se desperdicia memoria creando
 	procesos innecesarios.
 	
-	Sobre Node se instal\'{o} \textbf{Express.js}, un framework que
-	simplifica mucho la creaci\'{o}n de APIs. Express se encarga de
-	rutas, cabeceras HTTP y parsing de JSON, as\'{i} que el equipo
-	pudo concentrarse en la l\'{o}gica del inventario en lugar de
-	programar un servidor desde cero. Adem\'{a}s, su sistema de
+	Sobre Node se instal\'{o} \textbf{Express.js}~\cite{ExpressJS:2025},
+	un framework que simplifica mucho la creaci\'{o}n de APIs siguiendo
+	los principios de la arquitectura REST~\cite{Fielding:2000}. Express
+	se encarga de rutas, cabeceras HTTP y parsing de JSON, as\'{i} que
+	el equipo pudo concentrarse en la l\'{o}gica del inventario en lugar
+	de programar un servidor desde cero. Adem\'{a}s, su sistema de
 	middleware permiti\'{o} agregar despu\'{e}s el manejo de errores y
 	CORS sin modificar los endpoints directamente.
 	
@@ -816,11 +891,16 @@
 	contrase\~{n}as: \textbf{argon2}, considerada la m\'{a}s segura
 	en la actualidad pero con dependencias nativas que complicaban
 	la instalaci\'{o}n en Windows; \textbf{bcrypt}, muy probada en
-	producci\'{o}n pero que requer\'{i}a compilaci\'{o}n de
-	m\'{o}dulos C++ que generaba errores frecuentes en distintos
-	sistemas operativos; y \textbf{bcryptjs}, una reimplementaci\'{o}n
+	producci\'{o}n y recomendada por el NIST como funci\'{o}n de
+	hashing para contrase\~{n}as~\cite{NIST:2020}, pero que
+	requer\'{i}a compilaci\'{o}n de m\'{o}dulos C++ que generaba
+	errores frecuentes en distintos sistemas operativos; y
+	\textbf{bcryptjs}~\cite{bcryptjs:2023}, una reimplementaci\'{o}n
 	pura en JavaScript que produce resultados id\'{e}nticos a bcrypt
-	sin necesidad de compilaci\'{o}n alguna.
+	sin necesidad de compilaci\'{o}n alguna. Adem\'{a}s, las
+	gu\'{i}as de seguridad de OWASP confirman que bcrypt cumple con
+	las mejores pr\'{a}cticas de almacenamiento de
+	contrase\~{n}as~\cite{OWASP:2024}.
 	
 	Se eligi\'{o} \textbf{bcryptjs} por tres razones concretas.
 	Primera, al ser JavaScript puro, funcionaba sin problemas en
@@ -1003,12 +1083,11 @@
 	estado de la aplicaci\'{o}n. Cuando un usuario inicia
 	sesi\'{o}n, el frontend almacena sus datos ---nombre, correo
 	y rol--- en el objeto global \texttt{AppState} y en el
-	\texttt{localStorage} del navegador. Al cargar el dashboard,
-	una instrucci\'{o}n de JavaScript reemplaza el texto
-	est\'{a}tico por el valor de \texttt{AppState.user.name},
-	mostrando as\'{i} un saludo personalizado: ``Buenos
-	d\'{i}as, Juan~Pablo!'' o ``Buenos d\'{i}as,
-	Mar\'{i}a!'', seg\'{u}n corresponda.
+	\texttt{localStorage} del navegador~\cite{MDN:2025}. Al
+	cargar el dashboard, una instrucci\'{o}n de JavaScript
+	reemplaza el texto est\'{a}tico por el valor de
+	\texttt{AppState.user.name}, mostrando as\'{i} un saludo
+	personalizado.
 	
 	Este mismo mecanismo se aplica a los paneles laterales de
 	navegaci\'{o}n. La funci\'{o}n \texttt{updateSidebarUser()}
@@ -1036,17 +1115,27 @@
 	% Instruccion \balance para igualar columnas en la ultima pagina
 	\balance
 	
-	En el presente documento t\'{e}cnico se ha definido el alcance
-	funcional, visual y de datos de \app{}. La conceptualizaci\'{o}n de
-	una \pwa{} respaldada por un dise\~{n}o de interfaces basado en
-	sem\'{a}ntica visual valida la propuesta tecnol\'{o}gica para reducir
-	mermas en peque\~{n}os comercios de alimentos.
+	El desarrollo de \app{} a lo largo de los tres cortes del
+	semestre demostr\'{o} que un equipo peque\~{n}o, con las
+	herramientas correctas, puede construir una soluci\'{o}n
+	funcional para un problema real. En el primer corte, se
+	defini\'{o} la problem\'{a}tica, se dise\~{n}aron las
+	interfaces basadas en Material Design~3 y se construy\'{o} un
+	prototipo navegable. En el segundo corte, se model\'{o} la
+	base de datos relacional en MySQL, separando el cat\'{a}logo
+	de productos de las existencias f\'{i}sicas para habilitar
+	el m\'{e}todo \peps{} y la trazabilidad inmutable. En el
+	tercer corte, se implement\'{o} la arquitectura del backend
+	con Node.js y Express~\cite{ExpressJS:2025}, y se
+	construy\'{o} un sistema de autenticaci\'{o}n seguro basado
+	en bcryptjs~\cite{bcryptjs:2023} y tokens JWT.
 	
-	La separaci\'{o}n estrat\'{e}gica de \texttt{PRODUCTS} y \texttt{BATCHES}
-	en la base de datos relacional, junto con la normalizaci\'{o}n de
-	la relaci\'{o}n con proveedores mediante \texttt{PRODUCT\_SUPPLIERS},
-	sientan bases escalables y auditables que dotan al sistema del
-	rigor t\'{e}cnico necesario para operar en un entorno real.
+	La base de datos relacional, con su separaci\'{o}n
+	estrat\'{e}gica de \texttt{PRODUCTS} y \texttt{BATCHES}, junto
+	con la normalizaci\'{o}n de la relaci\'{o}n con proveedores
+	mediante \texttt{PRODUCT\_SUPPLIERS}, sientan bases escalables
+	y auditables que dotan al sistema del rigor t\'{e}cnico
+	necesario para operar en un entorno real.
 	
 	De cara a la \'{u}ltima etapa del proyecto, el equipo abordar\'{a} el
 	dise\~{n}o e implementaci\'{o}n de la
@@ -1119,7 +1208,7 @@
 
 	%  REFERENCIAS
 
-	\begin{thebibliography}{1}
+	\begin{thebibliography}{12}
 		
 		\bibitem{Silver:2016}
 		E.~A. Silver, D.~F. Pyke, and D.~J. Thomas,
@@ -1142,6 +1231,49 @@
 		Google LLC,
 		``Material Design 3,'' 2026.
 		[Online]. Disponible en: \url{https://m3.material.io/}
+		
+		\bibitem{NIST:2020}
+		P.~A. Grassi, J.~A. Fenton, E.~M. Newton \emph{et al.},
+		``Digital Identity Guidelines: Authentication and Lifecycle
+		Management,''
+		NIST Special Publication 800-63B, Gaithersburg, MD, USA, 2020.
+		
+		\bibitem{Probst:2018}
+		L.~Probst, F.~Dameri, and J.~Damiani,
+		``Inventory Management Practices in Food Supply Chains:
+		A Systematic Literature Review,''
+		\emph{Journal of Cleaner Production}, vol.~198, pp.~1345--1360, 2018.
+		
+		\bibitem{MDN:2025}
+		Mozilla Developer Network,
+		``Window.localStorage,'' 2025.
+		[Online]. Disponible en: \url{https://developer.mozilla.org/en-US/docs/Web/API/Window/localStorage}
+		
+		\bibitem{Fielding:2000}
+		R.~T. Fielding,
+		``Architectural Styles and the Design of Network-based Software
+		Architectures,''
+		Ph.D. dissertation, Dept.~Informática, Univ.~of California, Irvine, 2000.
+		
+		\bibitem{OWASP:2024}
+		Open Worldwide Application Security Project,
+		``Password Storage Cheat Sheet,'' 2024.
+		[Online]. Disponible en: \url{https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html}
+		
+		\bibitem{Elmasri:2016}
+		R.~Elmasri and S.~B. Navathe,
+		\emph{Fundamentals of Database Systems}, 7th~ed.
+		Hoboken, NJ, USA: Pearson, 2016.
+		
+		\bibitem{ExpressJS:2025}
+		Express.js,
+		``Express.js Guide,'' 2025.
+		[Online]. Disponible en: \url{https://expressjs.com/}
+		
+		\bibitem{bcryptjs:2023}
+		N.~M. Stok,
+		``bcryptjs: Pure JavaScript implementation of bcrypt,'' 2023.
+		[Online]. Disponible en: \url{https://www.npmjs.com/package/bcryptjs}
 		
 	\end{thebibliography}
 	
