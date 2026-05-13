@@ -205,3 +205,8 @@ INSERT INTO branch (name, address, is_active) VALUES
 
 INSERT INTO supplier (name, contact_person, phone, email, is_active) VALUES
 ('Dairy Farms Co.', 'John Doe', '555-1234', 'contact@dairyfarms.com', TRUE);
+
+INSERT INTO user (name, email, password_hash, role) VALUES
+('Sadid Acosta', 'Sadid@freshstock.com', '$2b$10$yGV/BlS27s09l4Lm9IONNebso5AsFb/a2itQ5rHZC0j.vtYHpLYz2', 'admin'),
+('Pablo', 'Pablo@freshstock.com', '$2b$10$a57AZztYAmD2vdsY2JKvzuQZ/UFBIY1yf51djcU1VnK8SkSl3Sb6G', 'warehouse'),
+('Brian Jesid Zambrano', 'Brian@freshstock.com', '$2b$10$m9Rfw176COfx0r4ujM89deA0TkqNRekqI/MvWBzWKzlQHilGStJky', 'seller');
