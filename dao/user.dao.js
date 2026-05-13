@@ -2,7 +2,14 @@ const db = require('../services/mysql.service');
 const AppError = require('../utils/AppError');
 
 const getAll = async () => {
-  const [rows] = await db.query('SELECT user_id, name, email, role, is_active, created_at FROM user');
+  const [rows] = await db.query(`
+    SELECT u.user_id, u.name, u.email, u.role, u.is_active, u.created_at,
+           CASE WHEN a.user_id IS NOT NULL THEN TRUE ELSE FALSE END AS is_online
+    FROM user u
+    LEFT JOIN (
+      SELECT DISTINCT user_id FROM audit_session WHERE is_active = TRUE
+    ) a ON u.user_id = a.user_id
+  `);
   return rows;
 };
 

@@ -223,7 +223,12 @@ function updateSidebarUser(user) {
   });
 }
 
-function logout() {
+async function logout() {
+  try {
+    await api.logout();
+  } catch (error) {
+    console.error('Error al cerrar sesión:', error);
+  }
   AppState.user = null;
   AppState.token = null;
   localStorage.removeItem('freshstock-user');

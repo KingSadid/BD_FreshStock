@@ -11,8 +11,8 @@ const UsersScreen = {
       grid.innerHTML = users.map(u => {
         const initials = u.name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
         const roleLabel = roleLabels[u.role] || u.role;
-        const statusClass = u.is_active ? 'online' : 'offline';
-        const statusText = u.is_active ? 'Activo' : 'Inactivo';
+        const statusClass = u.is_online ? 'online' : 'offline';
+        const statusText = u.is_online ? 'Conectado' : 'Desconectado';
         const date = new Date(u.created_at).toLocaleDateString('es-CO');
 
         return `

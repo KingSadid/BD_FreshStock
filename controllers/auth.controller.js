@@ -1,4 +1,5 @@
 const jwt = require('jsonwebtoken');
+const crypto = require('crypto');
 const authDao = require('../dao/auth.dao');
 const hashService = require('../services/hash.service');
 const asyncHandler = require('../utils/asyncHandler');
@@ -61,6 +62,10 @@ const login = asyncHandler(async (req, res) => {
 
   const token = generateToken(user);
 
+  // Crear sesión en audit_session
+  const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+  await authDao.createSession(user.user_id, tokenHash, req.ip, req.get('user-agent'));
+
   res.json({
     user: {
       user_id: user.user_id,
@@ -72,4 +77,9 @@ const login = asyncHandler(async (req, res) => {
   });
 });
 
-module.exports = { register, login };
+const logout = asyncHandler(async (req, res) => {
+  await authDao.endSession(req.user.id);
+  res.json({ message: 'Sesión cerrada correctamente' });
+});
+
+module.exports = { register, login, logout };
