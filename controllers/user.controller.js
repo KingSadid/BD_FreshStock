@@ -22,4 +22,40 @@ const create = asyncHandler(async (req, res) => {
   res.status(201).json(result);
 });
 
-module.exports = { getAll, getById, create };
+const deactivate = asyncHandler(async (req, res) => {
+  const { role, id } = req.user;
+  if (role !== 'admin') {
+    return res.status(403).json({ error: 'Solo administradores pueden desactivar usuarios' });
+  }
+  if (id == req.params.id) {
+    return res.status(400).json({ error: 'No puedes desactivarte a ti mismo' });
+  }
+  const success = await userDao.deactivate(req.params.id);
+  if (!success) return res.status(404).json({ error: 'Usuario no encontrado' });
+  res.json({ message: 'Usuario desactivado correctamente' });
+});
+
+const activate = asyncHandler(async (req, res) => {
+  const { role } = req.user;
+  if (role !== 'admin') {
+    return res.status(403).json({ error: 'Solo administradores pueden activar usuarios' });
+  }
+  const success = await userDao.activate(req.params.id);
+  if (!success) return res.status(404).json({ error: 'Usuario no encontrado' });
+  res.json({ message: 'Usuario activado correctamente' });
+});
+
+const remove = asyncHandler(async (req, res) => {
+  const { role, id } = req.user;
+  if (role !== 'admin') {
+    return res.status(403).json({ error: 'Solo administradores pueden eliminar usuarios' });
+  }
+  if (id == req.params.id) {
+    return res.status(400).json({ error: 'No puedes eliminarte a ti mismo' });
+  }
+  const success = await userDao.remove(req.params.id);
+  if (!success) return res.status(404).json({ error: 'Usuario no encontrado' });
+  res.json({ message: 'Usuario eliminado permanentemente' });
+});
+
+module.exports = { getAll, getById, create, deactivate, activate, remove };

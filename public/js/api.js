@@ -53,5 +53,29 @@ const api = {
 
   getUsers: () => fetch(`${API_BASE}/api/users`, {
     headers: { 'Authorization': `Bearer ${AppState.token}` }
-  }).then(r => r.json())
+  }).then(r => r.json()),
+
+  deactivateUser: (id) => fetch(`${API_BASE}/api/users/${id}/deactivate`, {
+    method: 'PATCH',
+    headers: { 'Authorization': `Bearer ${AppState.token}` }
+  }).then(r => {
+    if (!r.ok) return r.json().then(err => { throw err; });
+    return r.json();
+  }),
+
+  activateUser: (id) => fetch(`${API_BASE}/api/users/${id}/activate`, {
+    method: 'PATCH',
+    headers: { 'Authorization': `Bearer ${AppState.token}` }
+  }).then(r => {
+    if (!r.ok) return r.json().then(err => { throw err; });
+    return r.json();
+  }),
+
+  deleteUser: (id) => fetch(`${API_BASE}/api/users/${id}`, {
+    method: 'DELETE',
+    headers: { 'Authorization': `Bearer ${AppState.token}` }
+  }).then(r => {
+    if (!r.ok) return r.json().then(err => { throw err; });
+    return r.json();
+  })
 };

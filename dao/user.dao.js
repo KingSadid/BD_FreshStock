@@ -26,4 +26,19 @@ const create = async (data) => {
   return { user_id: result.insertId, name, email, role };
 };
 
-module.exports = { getAll, getById, create };
+const deactivate = async (id) => {
+  const [result] = await db.query('UPDATE user SET is_active = FALSE WHERE user_id = ?', [id]);
+  return result.affectedRows > 0;
+};
+
+const activate = async (id) => {
+  const [result] = await db.query('UPDATE user SET is_active = TRUE WHERE user_id = ?', [id]);
+  return result.affectedRows > 0;
+};
+
+const remove = async (id) => {
+  const [result] = await db.query('DELETE FROM user WHERE user_id = ?', [id]);
+  return result.affectedRows > 0;
+};
+
+module.exports = { getAll, getById, create, deactivate, activate, remove };

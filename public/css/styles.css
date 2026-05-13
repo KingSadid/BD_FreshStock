@@ -2232,6 +2232,50 @@ body {
   gap: 10px;
 }
 
+.btn-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  border: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 0.9rem;
+}
+
+.btn-icon:hover {
+  transform: scale(1.1);
+}
+
+.btn-icon.btn-warning {
+  background: #fef3c7;
+  color: #d97706;
+}
+
+.btn-icon.btn-warning:hover {
+  background: #fde68a;
+}
+
+.btn-icon.btn-danger {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.btn-icon.btn-danger:hover {
+  background: #fecaca;
+}
+
+.btn-icon.btn-success {
+  background: #d1fae5;
+  color: #059669;
+}
+
+.btn-icon.btn-success:hover {
+  background: #a7f3d0;
+}
+
 .status-dot {
   width: 8px;
   height: 8px;
