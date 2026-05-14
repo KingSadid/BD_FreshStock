@@ -17,7 +17,7 @@ const getExpiringBatches = asyncHandler(async (req, res) => {
 });
 
 const create = asyncHandler(async (req, res) => {
-  const result = await batchDao.create(req.body);
+  const result = await batchDao.create(req.body, req.user.id);
   res.status(201).json(result);
 });
 

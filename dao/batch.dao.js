@@ -32,7 +32,7 @@ const getByProduct = async (sku) => {
   return rows;
 };
 
-const create = async (data) => {
+const create = async (data, userId) => {
   const connection = await db.getConnection();
   try {
     await connection.beginTransaction();
@@ -65,8 +65,8 @@ const create = async (data) => {
       `INSERT INTO movement 
        (batch_id, movement_type_id, user_id, quantity, 
         previous_quantity, posterior_quantity, reason) 
-       VALUES (?, 1, 1, ?, 0, ?, 'Entrada inicial de inventario')`,
-      [result.insertId, initial_quantity, initial_quantity]
+       VALUES (?, 1, ?, ?, 0, ?, 'Entrada inicial de inventario')`,
+      [result.insertId, userId, initial_quantity, initial_quantity]
     );
 
     await connection.commit();
