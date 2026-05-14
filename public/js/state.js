@@ -9,6 +9,6 @@ const AppState = {
   batches: [],
   suppliers: [],
   categories: [],
-  user: JSON.parse(localStorage.getItem('freshstock-user') || 'null'),
-  token: localStorage.getItem('freshstock-token') || null
+  user: null,
+  token: null
 };

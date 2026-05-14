@@ -3,10 +3,7 @@
  * Initializes forms and global behavior.
  */
 document.addEventListener('DOMContentLoaded', () => {
-  if (AppState.token && AppState.user) {
-    updateSidebarUser(AppState.user);
-    navigateTo('screen-dashboard');
-  }
+  navigateTo('screen-login');
 
   const lotForm = document.getElementById('lot-form');
   if (lotForm) {
