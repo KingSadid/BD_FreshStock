@@ -67,6 +67,28 @@ const api = {
 
   getRecentMovements: () => fetch(`${API_BASE}/api/movements/recent`).then(r => r.json()),
 
+  getReportInventoryValuation: (categoryId) => {
+    const params = categoryId ? `?category_id=${categoryId}` : '';
+    return fetch(`${API_BASE}/api/reports/inventory-valuation${params}`, {
+      headers: { 'Authorization': `Bearer ${AppState.token}` }
+    }).then(r => r.json());
+  },
+  getReportMovementHistory: (filters) => {
+    const params = new URLSearchParams(filters).toString();
+    return fetch(`${API_BASE}/api/reports/movement-history?${params}`, {
+      headers: { 'Authorization': `Bearer ${AppState.token}` }
+    }).then(r => r.json());
+  },
+  getReportWaste: (filters) => {
+    const params = new URLSearchParams(filters).toString();
+    return fetch(`${API_BASE}/api/reports/waste?${params}`, {
+      headers: { 'Authorization': `Bearer ${AppState.token}` }
+    }).then(r => r.json());
+  },
+  getReportMovementTypes: () => fetch(`${API_BASE}/api/reports/movement-types`, {
+    headers: { 'Authorization': `Bearer ${AppState.token}` }
+  }).then(r => r.json()),
+
   getUsers: () => fetch(`${API_BASE}/api/users`, {
     headers: { 'Authorization': `Bearer ${AppState.token}` }
   }).then(r => r.json()),

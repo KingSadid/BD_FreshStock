@@ -11,6 +11,7 @@ const categoryRoutes = require("./routes/categories.routes");
 const movementRoutes = require("./routes/movements.routes");
 const dashboardRoutes = require("./routes/dashboard.routes");
 const userRoutes = require("./routes/users.routes");
+const reportsRoutes = require("./routes/reports.routes");
 const analyticsRoutes = require("./routes/analytics.routes");
 const etlRoutes = require("./routes/etl.routes");
 
@@ -30,6 +31,7 @@ api.use("/api/categories", categoryRoutes);
 api.use("/api/movements", movementRoutes);
 api.use("/api/dashboard", dashboardRoutes);
 api.use("/api/users", userRoutes);
+api.use("/api/reports", reportsRoutes);
 api.use("/api/analytics", analyticsRoutes);
 api.use("/api/etl", etlRoutes);
 
