@@ -2,6 +2,7 @@ const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const authDao = require('../dao/auth.dao');
 const hashService = require('../services/hash.service');
+const analytics = require('../services/analytics.service');
 const asyncHandler = require('../utils/asyncHandler');
 const AppError = require('../utils/AppError');
 
@@ -65,6 +66,13 @@ const login = asyncHandler(async (req, res) => {
   // Crear sesión en audit_session
   const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
   await authDao.createSession(user.user_id, tokenHash, req.ip, req.get('user-agent'));
+
+  analytics.logUserSession(user.user_id, {
+    email: user.email,
+    role: user.role,
+    ip: req.ip,
+    user_agent: req.get('user-agent')
+  }).catch(() => {});
 
   res.json({
     user: {

@@ -9,6 +9,11 @@ const DashboardScreen = {
         welcome.textContent = `¡Buenos días, ${AppState.user.name}!`;
       }
 
+      const etlBtn = document.getElementById('btn-run-etl');
+      if (etlBtn) {
+        etlBtn.style.display = AppState.user && AppState.user.role === 'admin' ? 'inline-flex' : 'none';
+      }
+
       const kpis = await api.getKPIs();
       document.getElementById('kpi-products').textContent = kpis.active_products;
       document.getElementById('kpi-batches').textContent = kpis.total_batches;
@@ -201,6 +206,28 @@ const DashboardScreen = {
     
     const texts = svg.querySelectorAll('text');
     texts.forEach(t => svg.appendChild(t));
+  },
+
+  async runETL() {
+    const btn = document.getElementById('btn-run-etl');
+    if (!btn) return;
+    const original = btn.innerHTML;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Ejecutando...';
+    btn.disabled = true;
+
+    try {
+      const result = await api.runETL();
+      showToast('ETL Completado',
+        `${result.results.alerts} alertas, ${result.results.movements} movimientos, ${result.results.sessions} sesiones migrados`,
+        'success'
+      );
+      loadDashboard();
+    } catch (err) {
+      showToast('Error', err.error || 'No se pudo ejecutar el ETL', 'error');
+    } finally {
+      btn.innerHTML = original;
+      btn.disabled = false;
+    }
   }
 };
 

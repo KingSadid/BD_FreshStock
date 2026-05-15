@@ -11,6 +11,8 @@ const categoryRoutes = require("./routes/categories.routes");
 const movementRoutes = require("./routes/movements.routes");
 const dashboardRoutes = require("./routes/dashboard.routes");
 const userRoutes = require("./routes/users.routes");
+const analyticsRoutes = require("./routes/analytics.routes");
+const etlRoutes = require("./routes/etl.routes");
 
 const PORT = 5000;
 const api = express();
@@ -28,6 +30,8 @@ api.use("/api/categories", categoryRoutes);
 api.use("/api/movements", movementRoutes);
 api.use("/api/dashboard", dashboardRoutes);
 api.use("/api/users", userRoutes);
+api.use("/api/analytics", analyticsRoutes);
+api.use("/api/etl", etlRoutes);
 
 api.use((err, req, res, next) => {
   console.error(err);

@@ -1,5 +1,6 @@
 const db = require('../services/mysql.service');
 const AppError = require('../utils/AppError');
+const analytics = require('../services/analytics.service');
 
 const getAll = async (status = 'active') => {
   const [rows] = await db.query(`
@@ -71,6 +72,17 @@ const create = async (data, userId) => {
 
     await connection.commit();
 
+    analytics.logMovement(userId, {
+      product_sku, batch_id: result.insertId,
+      movement_type: 'purchase', quantity: initial_quantity,
+      previous_quantity: 0, posterior_quantity: initial_quantity
+    }).catch(() => {});
+
+    analytics.logStockSnapshot(userId, {
+      product_sku, batch_id: result.insertId,
+      current_quantity: initial_quantity, expiry_date
+    }).catch(() => {});
+
     return {
       batch_id: result.insertId,
       batch_code,
@@ -88,7 +100,7 @@ const updateQuantity = async (batchId, data) => {
   const { quantity, user_id = 1, reason } = data;
 
   const [batch] = await db.query(
-    'SELECT current_quantity FROM batch WHERE batch_id = ?',
+    'SELECT current_quantity, product_sku FROM batch WHERE batch_id = ?',
     [batchId]
   );
 
@@ -96,6 +108,7 @@ const updateQuantity = async (batchId, data) => {
 
   const previous = batch[0].current_quantity;
   const posterior = previous - quantity;
+  const productSku = batch[0].product_sku;
 
   if (posterior < 0) {
     throw new AppError('Cantidad insuficiente en lote', 400);
@@ -113,6 +126,17 @@ const updateQuantity = async (batchId, data) => {
      VALUES (?, 2, ?, ?, ?, ?, ?)`,
     [batchId, user_id, quantity, previous, posterior, reason || 'Salida de inventario']
   );
+
+  analytics.logMovement(user_id, {
+    product_sku: productSku, batch_id: batchId,
+    movement_type: 'sale', quantity,
+    previous_quantity: previous, posterior_quantity: posterior
+  }).catch(() => {});
+
+  analytics.logStockSnapshot(user_id, {
+    product_sku: productSku, batch_id: batchId,
+    current_quantity: posterior, expiry_date: null
+  }).catch(() => {});
 
   return { message: 'Stock actualizado', new_quantity: posterior };
 };
@@ -138,6 +162,12 @@ const remove = async (batchId) => {
   try {
     await connection.beginTransaction();
 
+    const [batchInfo] = await connection.query(
+      `SELECT b.product_sku, b.expiry_date, b.current_quantity, p.name as product_name
+       FROM batch b JOIN product p ON b.product_sku = p.sku
+       WHERE b.batch_id = ?`, [batchId]
+    );
+
     await connection.query('DELETE FROM movement WHERE batch_id = ?', [batchId]);
 
     const [result] = await connection.query('DELETE FROM batch WHERE batch_id = ?', [batchId]);
@@ -147,6 +177,17 @@ const remove = async (batchId) => {
     }
 
     await connection.commit();
+
+    if (batchInfo[0]) {
+      analytics.logExpiryEvent(null, {
+        batch_id: batchId,
+        product_sku: batchInfo[0].product_sku,
+        product_name: batchInfo[0].product_name,
+        expiry_date: batchInfo[0].expiry_date,
+        was_consumed: false,
+        quantity_expired: batchInfo[0].current_quantity
+      }).catch(() => {});
+    }
   } catch (err) {
     await connection.rollback();
     throw err;

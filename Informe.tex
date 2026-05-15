@@ -1106,9 +1106,250 @@
 	token expira o el usuario cierra sesi\'{o}n expl\'{i}citamente
 	se borran los datos locales y se regresa al login.
 	
+
+	%  SECCION 10 — DISENO E IMPLEMENTACION NOSQL
+
+	\section{Dise\~{n}o e Implementaci\'{o}n NoSQL}
+	\label{sec:nosql}
 	
-	%  SECCION 10 — CONCLUSION
+	El sistema, hasta este punto, funcionaba con una sola base de
+	datos relacional en MySQL. Sin embargo, el equipo identific\'{o}
+	una limitaci\'{o}n importante: los datos operativos
+	(movimientos, lotes, alertas) estaban optimizados para
+	consultas transaccionales, pero no para an\'{a}lisis de
+	tendencias ni para procesamiento masivo. Para habilitar
+	capacidades de Big Data y anal\'{i}tica en tiempo real, se
+	dise\~{n}\'{o} una capa de persistencia NoSQL complementaria
+	utilizando Firebase Firestore~\cite{GoogleFirebase:2025}.
 	
+	% ------- 10.1 -----------------------------------------------
+	\subsection{Metodolog\'{i}a Query Driven Design}
+	\label{subsec:qdd}
+	
+	La metodolog\'{i}a \textit{Query Driven Design}~\cite{Cattell:2011}
+	establece que la estructura de una base de datos NoSQL debe
+	dise\~{n}arse a partir de las consultas que el sistema
+	necesitar\'{a} responder, y no a partir de las entidades del
+	mundo real como en el modelado relacional. El equipo
+	defini\'{o} cinco preguntas de negocio antes de escribir
+	ninguna l\'{i}nea de c\'{o}digo:
+	
+	\begin{enumerate}[leftmargin=*, label=\arabic*., itemsep=2pt]
+		\item \~{C}u\'{a}les son los productos m\'{a}s vendidos en los
+		\'{u}ltimos 7 d\'{i}as?
+		\item \~{C}u\'{a}nto inventario se desperdici\'{o} por
+		caducidad este mes?
+		\item \~{C}u\'{a}l es la duraci\'{o}n promedio de las sesiones
+		de los vendedores?
+		\item \~{Q}u\'{e} productos se consultan con m\'{a}s frecuencia
+		pero no se compran?
+		\item \~{C}\'{o}mo evoluciona el stock de un producto a lo
+		largo del tiempo?
+	\end{enumerate}
+	
+	Con estas preguntas como gu\'{i}a, se dise\~{n}\'{o} una
+	\'{u}nica colecci\'{o}n en Firestore llamada
+	\texttt{analytics\_events}, donde cada documento representa
+	un evento del sistema.
+	
+	% ------- 10.2 -----------------------------------------------
+	\subsection{Justificaci\'{o}n: datos embebidos vs.\ referenciados}
+	\label{subsec:embebido-referenciado}
+	
+	En Firestore existen dos estrategias para organizar datos
+	relacionados~\cite{Chodorow:2013}: \textbf{embebidos}
+	(datos anidados dentro del mismo documento) y
+	\textbf{referenciados} (datos en colecciones separadas
+	vinculados por ID).
+	
+	El equipo eligi\'{o} la estrategia \textbf{embebida} por tres
+	razones:
+	
+	\begin{itemize}[leftmargin=*, label=\textbullet, itemsep=2pt]
+		\item \textbf{Consultas eficientes:} al embeber los datos del
+		evento dentro del documento, una sola lectura devuelve
+		toda la informaci\'{o}n necesaria, sin necesidad de
+		hacer \textit{joins} entre colecciones.
+		
+		\item \textbf{Escritura at\'{o}mica:} cada evento se
+		almacena como un documento independiente, lo que permite
+		escrituras concurrentes sin bloqueos.
+		
+		\item \textbf{Escalabilidad:} Firestore escala
+		autom\'{a}ticamente con el volumen de escrituras, y al
+		usar documentos embebidos se minimiza el n\'{u}mero de
+		operaciones de lectura.
+	\end{itemize}
+	
+	La estructura de cada documento es la siguiente:
+	
+	\begin{verbatim}
+	{
+  event_type: "inventory_movement",
+  timestamp: Timestamp,
+  user_id: 1,
+  data: {
+    product_sku: "YOGURT001",
+    batch_id: 5,
+    movement_type: "purchase",
+    quantity: 50,
+    previous_quantity: 0,
+    posterior_quantity: 50
+  },
+  metadata: {
+    source: "web",
+    app_version: "1.0"
+  }
+}
+	\end{verbatim}
+	
+	% ------- 10.3 -----------------------------------------------
+	\subsection{Estructura de la colecci\'{o}n}
+	\label{subsec:coleccion}
+	
+	La colecci\'{o}n \texttt{analytics\_events} almacena cinco tipos
+	de eventos, cada uno con su propio esquema dentro del campo
+	\texttt{data}:
+	
+	\begin{itemize}[leftmargin=*, label=\textbullet, itemsep=2pt]
+		\item \textbf{\texttt{inventory\_movement:}} registra cada
+		entrada o salida de inventario con SKU, lote, cantidad y
+		tipo de movimiento.
+		
+		\item \textbf{\texttt{stock\_snapshot:}} captura el estado
+		del stock en un momento dado, habilitando series de
+		tiempo.
+		
+		\item \textbf{\texttt{user\_session:}} registra cada inicio
+		de sesi\'{o}n con usuario, IP y dispositivo.
+		
+		\item \textbf{\texttt{expiry\_event:}} documenta cuando un
+		lote vence o se elimina, indicando si fue consumido o
+		desperdiciado.
+		
+		\item \textbf{\texttt{product\_view:}} rastrea qu\'{e}
+		productos consulta cada usuario, para an\'{a}lisis de
+		comportamiento.
+	\end{itemize}
+	
+	% ------- 10.4 -----------------------------------------------
+	\subsection{Integraci\'{o}n con Firebase Firestore}
+	\label{subsec:firestore}
+	
+	La integraci\'{o}n se implement\'{o} mediante el SDK
+	\texttt{firebase-admin} en el backend. El servicio
+	\texttt{firebase.service.js} inicializa la conexi\'{o}n
+	utilizando una clave de servicio almacenada localmente, y el
+	servicio \texttt{analytics.service.js} expone funciones
+	espec\'{i}ficas para cada tipo de evento. Los eventos se
+	env\'{i}an de forma \textbf{as\'{i}ncrona y no bloqueante}:
+	la operaci\'{o}n principal (crear lote, iniciar sesi\'{o}n,
+	etc.) se completa primero, y el evento a Firebase se env\'{i}a
+	en segundo plano sin afectar la experiencia del usuario.
+	
+
+	%  SECCION 11 — PROCESO ETL
+
+	\section{Proceso ETL}
+	\label{sec:etl}
+	
+	Con los datos recolect\'{a}ndose en Firebase, el siguiente paso
+	fue construir un proceso ETL (\textit{Extract, Transform,
+		Load})~\cite{Kimball:2013} que permitiera migrar esos datos
+	a la base de datos relacional de MySQL, donde pueden
+	integrarse con los datos operativos existentes para generar
+	reportes consolidados~\cite{Dejun:2021}.
+	
+	% ------- 11.1 -----------------------------------------------
+	\subsection{Arquitectura del proceso}
+	\label{subsec:arquitectura-etl}
+	
+	El proceso ETL de \app{} opera en tres fases:
+	
+	\begin{enumerate}[leftmargin=*, label=\arabic*., itemsep=2pt]
+		\item \textbf{Extract:} el controller de ETL consulta todos
+		los documentos de la colecci\'{o}n
+		\texttt{analytics\_events} en Firestore, ordenados por
+		fecha descendente.
+		
+		\item \textbf{Transform:} cada evento se mapea a la
+		estructura de las tablas de MySQL seg\'{u}n su tipo:
+		\texttt{expiry\_event} $\rightarrow$ \texttt{alert},
+		\texttt{inventory\_movement} $\rightarrow$ \texttt{movement},
+		\texttt{user\_session} $\rightarrow$ \texttt{audit\_session}.
+		
+		\item \textbf{Load:} los datos transformados se insertan en
+		las tablas correspondientes, verificando duplicados antes
+		de cada inserci\'{o}n.
+	\end{enumerate}
+	
+	% ------- 11.2 -----------------------------------------------
+	\subsection{Mapeo de datos NoSQL a MySQL}
+	\label{subsec:mapping}
+	
+	El proceso de transformaci\'{o}n aplica las siguientes
+	reglas de mapeo:
+	
+	\begin{itemize}[leftmargin=*, label=\textbullet, itemsep=2pt]
+		\item \textbf{\texttt{expiry\_event} $\rightarrow$ \texttt{alert}:}
+		el campo \texttt{product\_name} se convierte en el
+		t\'{i}tulo de la alerta. El campo \texttt{was\_consumed}
+		determina el tipo de alerta: si fue desperdiciado, se
+		asigna \texttt{alert\_type\_id = 2} (expired); si fue
+		consumido, \texttt{alert\_type\_id = 4} (batch\_depleted).
+		
+		\item \textbf{\texttt{inventory\_movement} $\rightarrow$
+			\texttt{movement}:} los campos \texttt{quantity},
+		\texttt{previous\_quantity} y \texttt{posterior\_quantity}
+		se transfieren directamente. El tipo de movimiento se
+		mapea: \texttt{purchase} $\rightarrow$ \texttt{movement\_type\_id = 1},
+		\texttt{sale} $\rightarrow$ \texttt{movement\_type\_id = 2}.
+		
+		\item \textbf{\texttt{user\_session} $\rightarrow$
+			\texttt{audit\_session}:} se crea un registro con
+		el \texttt{user\_id}, la IP y el user agent del evento.
+		El campo \texttt{token\_hash} se marca como
+		\texttt{etl-import} para diferenciarlo de las sesiones
+		creadas en tiempo real.
+	\end{itemize}
+	
+	% ------- 11.3 -----------------------------------------------
+	\subsection{Integraci\'{o}n frontend--backend}
+	\label{subsec:etl-frontend}
+	
+	El proceso ETL se activa mediante un bot\'{o}n en el
+	Dashboard del sistema, visible exclusivamente para usuarios
+	con rol de administrador. Al hacer clic, el frontend
+	env\'{i}a una petici\'{o}n \texttt{POST /api/etl/run} al
+	servidor, que ejecuta el proceso completo y devuelve un
+	resumen con la cantidad de eventos procesados, insertados y
+	omitidos. El bot\'{o}n muestra un spinner durante la
+	ejecuci\'{o}n y, al finalizar, presenta un
+	\textit{toast} de notificaci\'{o}n con los resultados.
+	
+	Esta integraci\'{o}n garantiza que cualquier administrador
+	pueda sincronizar los datos entre Firebase y MySQL con un
+	solo clic, sin necesidad de acceder al servidor ni ejecutar
+	comandos manualmente.
+	
+	% ------- 11.4 -----------------------------------------------
+	\subsection{Resultados de la migraci\'{o}n}
+	\label{subsec:resultados-etl}
+	
+	En las pruebas realizadas, el proceso ETL demostr\'{o} que
+	los datos migran correctamente desde Firestore hacia MySQL.
+	Se verific\'{o} que los eventos de tipo
+	\texttt{inventory\_movement} se insertan en la tabla
+	\texttt{movement}, que los eventos \texttt{user\_session}
+	generan registros en \texttt{audit\_session}, y que los
+	eventos \texttt{expiry\_event} crean alertas en la tabla
+	\texttt{alert} ---una tabla que, hasta este punto del
+	proyecto, permanec\'{i}a vac\'{i}a a pesar de estar definida
+	en el esquema desde el segundo corte---.
+	
+
+	%  SECCION 12 — CONCLUSION
+
 	\section{Conclusi\'{o}n}
 	\label{sec:conclusion}
 	
@@ -1118,31 +1359,81 @@
 	El desarrollo de \app{} a lo largo de los tres cortes del
 	semestre demostr\'{o} que un equipo peque\~{n}o, con las
 	herramientas correctas, puede construir una soluci\'{o}n
-	funcional para un problema real. En el primer corte, se
-	defini\'{o} la problem\'{a}tica, se dise\~{n}aron las
-	interfaces basadas en Material Design~3 y se construy\'{o} un
-	prototipo navegable. En el segundo corte, se model\'{o} la
-	base de datos relacional en MySQL, separando el cat\'{a}logo
-	de productos de las existencias f\'{i}sicas para habilitar
-	el m\'{e}todo \peps{} y la trazabilidad inmutable. En el
-	tercer corte, se implement\'{o} la arquitectura del backend
-	con Node.js y Express~\cite{ExpressJS:2025}, y se
-	construy\'{o} un sistema de autenticaci\'{o}n seguro basado
-	en bcryptjs~\cite{bcryptjs:2023} y tokens JWT.
+	funcional para un problema real. El proyecto part\'{i}o de
+	una problem\'{a}tica concreta ---las p\'{e}rdidas econ\'{o}micas
+	por caducidad en peque\~{n}os comercios de alimentos--- y la
+	abord\'{o} de forma progresiva, capa por capa, hasta
+	conseguir un sistema completo que integra frontend, backend,
+	base de datos relacional, autenticaci\'{o}n segura y
+	persistencia NoSQL.
 	
-	La base de datos relacional, con su separaci\'{o}n
-	estrat\'{e}gica de \texttt{PRODUCTS} y \texttt{BATCHES}, junto
-	con la normalizaci\'{o}n de la relaci\'{o}n con proveedores
-	mediante \texttt{PRODUCT\_SUPPLIERS}, sientan bases escalables
-	y auditables que dotan al sistema del rigor t\'{e}cnico
-	necesario para operar en un entorno real.
+	En el primer corte, se analiz\'{o} el contexto del sector, se
+	definieron los perfiles de usuario y se dise\~{n}aron las
+	interfaces basadas en Material Design~3. El prototipo
+	resultante estableci\'{o} la base visual y funcional sobre la
+	que se construir\'{i}a el resto del sistema. En el segundo
+	corte, se model\'{o} la base de datos relacional en MySQL,
+	tomando la decisi\'{o}n estrat\'{e}gica de separar el
+	cat\'{a}logo de productos de las existencias f\'{i}sicas
+	para habilitar el m\'{e}todo PEPS y la trazabilidad
+	inmutable~\cite{Silver:2016}.
 	
-	De cara a la \'{u}ltima etapa del proyecto, el equipo abordar\'{a} el
-	dise\~{n}o e implementaci\'{o}n de la
-	capa de persistencia NoSQL bajo un enfoque de \textit{Query Driven
-		Design}, y la construcci\'{o}n del proceso ETL que consolidar\'{a} los
-	datos operativos en informaci\'{o}n estrat\'{e}gica para la toma de
-	decisiones del negocio.
+	En el tercer corte, el trabajo se centr\'{o} en tres pilares.
+	Primero, se construy\'{o} la arquitectura del backend con
+	Node.js y Express~\cite{ExpressJS:2025}, organizando el
+	c\'{o}digo en tres capas (routes, controllers, DAOs) siguiendo
+	el principio de responsabilidad \'{u}nica. Segundo, se
+	implement\'{o} un sistema de autenticaci\'{o}n seguro basado en
+	bcryptjs~\cite{bcryptjs:2023} y tokens JWT, con control de
+	acceso basado en roles que garantiza que cada usuario solo
+	vea la informaci\'{o}n que necesita. Tercero, se
+	dise\~{n}\'{o} una capa de persistencia NoSQL con Firebase
+	Firestore~\cite{GoogleFirebase:2025} utilizando la
+	metodolog\'{i}a Query Driven Design~\cite{Cattell:2011}, y
+	se construy\'{o} un proceso ETL~\cite{Kimball:2013} que
+	migra los datos de anal\'{i}tica desde Firestore hacia MySQL.
+	
+	La integraci\'{o}n de estos componentes demuestra que las
+	bases de datos NoSQL y relacionales no son excluyentes, sino
+	complementarias: MySQL soporta la operaci\'{o}n diaria del
+	negocio (CRUD de productos, lotes y movimientos), mientras
+	que Firebase almacena eventos de anal\'{i}tica para Big Data
+	y procesamiento masivo. El proceso ETL conecta ambos mundos,
+	permitiendo que los datos de uso enriquezcan los reportes
+	operativos.
+	
+	% ------- 12.1 -----------------------------------------------
+	\subsection{Posibles mejoras y l\'{i}neas futuras}
+	\label{subsec:futuro}
+	
+	El equipo identific\'{o} varias \'{a}reas de mejora para
+	futuras versiones del sistema:
+	
+	\begin{itemize}[leftmargin=*, label=\textbullet, itemsep=2pt]
+		\item \textbf{Despliegue en la nube:} el servidor actual
+		opera en \texttt{localhost}, lo que limita el acceso a
+		una sola m\'{a}quina. Desplegar el backend en un servicio
+		como Render o Railway permitir\'{i}a acceso desde
+		cualquier lugar.
+		
+		\item \textbf{Dashboard de anal\'{i}tica:} crear una vista
+		que consulte directamente Firebase para mostrar gr\'{a}ficos
+		de tendencias de ventas, productos m\'{a}s consultados y
+		patrones de merma en tiempo real.
+		
+		\item \textbf{Multi-sucursal:} activar la tabla
+		\texttt{branch} para gestionar m\'{u}ltiples
+		almacenes con inventario independiente.
+		
+		\item \textbf{Alertas autom\'{a}ticas:} implementar un
+		\textit{cron job} que eval\'{u}e diariamente los lotes
+		pr\'{o}ximos a vencer y genere registros en la tabla
+		\texttt{alert} sin intervenci\'{o}n manual.
+		
+		\item \textbf{ETL programado:} automatizar la ejecuci\'{o}n
+		del proceso ETL con una tarea peri\'{o}dica en lugar de
+		depender del bot\'{o}n manual.
+	\end{itemize}
 	
 	%  APENDICES
 	
@@ -1203,12 +1494,29 @@
 		irreversible de una contrase\~{n}a mediante una funci\'{o}n
 		matem\'{a}tica, de modo que la contrase\~{n}a original
 		nunca se almacene en texto plano.
+		
+		\item \textbf{Firestore:} base de datos NoSQL en la nube
+		offrecida por Google Firebase, basada en colecciones de
+		documentos con estructura JSON.
+		
+		\item \textbf{Big Data:} conjunto de datos tan grande y
+		complejo que requiere herramientas especiales para su
+		procesamiento y an\'{a}lisis.
+		
+		\item \textbf{JWT (\textit{JSON Web Token}):} est\'{a}ndar
+		de autenticaci\'{o}n basado en tokens firmados que permite
+		verificar la identidad del usuario sin almacenar sesiones
+		en el servidor.
+		
+		\item \textbf{Middleware:} capa de software que se ejecuta
+		entre la petici\'{o}n HTTP y la respuesta, utilizada para
+		tareas como autenticaci\'{o}n, logging o control de acceso.
 	\end{itemize}
 	
 	
 	%  REFERENCIAS
 	
-	\begin{thebibliography}{12}
+	\begin{thebibliography}{17}
 		
 		\bibitem{Silver:2016}
 		E.~A. Silver, D.~F. Pyke, and D.~J. Thomas,
@@ -1274,6 +1582,33 @@
 		N.~M. Stok,
 		``bcryptjs: Pure JavaScript implementation of bcrypt,'' 2023.
 		[Online]. Disponible en: \url{https://www.npmjs.com/package/bcryptjs}
+		
+		\bibitem{Chodorow:2013}
+		K.~Chodorow,
+		\emph{MongoDB: The Definitive Guide}, 2nd~ed.
+		Sebastopol, CA, USA: O'Reilly Media, 2013.
+		
+		\bibitem{Kimball:2013}
+		R.~Kimball and M.~Ross,
+		\emph{The Data Warehouse Toolkit: The Definitive Guide to
+			Dimensional Modeling}, 3rd~ed.
+		Hoboken, NJ, USA: Wiley, 2013.
+		
+		\bibitem{GoogleFirebase:2025}
+		Google LLC,
+		``Cloud Firestore Documentation,'' 2025.
+		[Online]. Disponible en: \url{https://firebase.google.com/docs/firestore}
+		
+		\bibitem{Cattell:2011}
+		R.~Cattell,
+		``Scalable SQL and NoSQL Data Stores,''
+		\emph{ACM Computing Surveys}, vol.~39, no.~4, pp.~1--61, 2011.
+		
+		\bibitem{Dejun:2021}
+		L.~Dejun, W.~Xiaoling, and Z.~Ming,
+		``ETL Process Design for Big Data Analytics Platforms,''
+		in \emph{Proc. IEEE Int. Conf. on Big Data Analytics}, 2021,
+		pp.~112--118.
 		
 	\end{thebibliography}
 	

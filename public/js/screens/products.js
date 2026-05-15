@@ -96,6 +96,11 @@ const ProductsScreen = {
       document.getElementById('btn-edit-product').onclick = () => editProduct(product);
       document.getElementById('btn-delete-product').onclick = () => deleteProductConfirm(product.sku);
 
+      api.sendEvent('product_view', {
+        product_sku: product.sku,
+        product_name: product.name
+      });
+
       navigateTo('screen-product-detail');
     } catch (error) {
       showToast('Error', 'No se pudo cargar el producto', 'error');

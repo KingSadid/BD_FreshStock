@@ -93,5 +93,19 @@ const api = {
   }).then(r => {
     if (!r.ok) return r.json().then(err => { throw err; });
     return r.json();
-  })
+  }),
+
+  sendEvent: (eventType, data) => fetch(`${API_BASE}/api/analytics/event`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${AppState.token}`
+    },
+    body: JSON.stringify({ event_type: eventType, data })
+  }).catch(() => {}),
+
+  runETL: () => fetch(`${API_BASE}/api/etl/run`, {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${AppState.token}` }
+  }).then(r => r.json())
 };
