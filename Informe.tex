@@ -109,19 +109,22 @@
 		model\'{o} la base de datos relacional en MySQL, definiendo la
 		separaci\'{o}n entre cat\'{a}logo de productos y existencias
 		f\'{i}sicas para habilitar el m\'{e}todo PEPS (Primero en Entrar,
-		Primero en Salir). En la tercera fase ---a\'{u}n en desarrollo---
-		se implement\'{o} la arquitectura del backend con Node.js y Express,
-		y se construy\'{o} un sistema de autenticaci\'{o}n seguro basado en
-		hashing criptogr\'{a}fico con bcryptjs y tokens JWT. El resultado
-		es un sistema funcional donde las contrase\~{n}as nunca se almacenan
-		en texto plano, los usuarios se autentican contra la base de datos
-		y el acceso a la informaci\'{o}n se controla mediante roles.
+		Primero en Salir). En la tercera, se implement\'{o} la arquitectura
+		del backend con Node.js y Express, se construy\'{o} un sistema de
+		autenticaci\'{o}n seguro basado en hashing criptogr\'{a}fico con
+		bcryptjs y tokens JWT, se dise\~{n}\'{o} una capa de persistencia
+		NoSQL con Firebase Firestore bajo la metodolog\'{i}a \textit{Query
+		Driven Design}, y se implement\'{o} un proceso ETL que migra datos
+		desde Firestore hacia MySQL. El resultado es un sistema funcional
+		que integra frontend, backend, base de datos relacional,
+		autenticaci\'{o}n por roles y anal\'{i}tica NoSQL.
 	\end{abstract}
 	
 	\begin{IEEEkeywords}
 		Gesti\'{o}n de inventario, control de caducidad, \pwa{},
 		m\'{e}todo \peps{}, modelo Entidad-Relaci\'{o}n, base de datos
 		relacional, hashing criptogr\'{a}fico, autenticaci\'{o}n JWT,
+		NoSQL, Firebase Firestore, ETL, Query Driven Design,
 		trazabilidad, arquitectura de software.
 	\end{IEEEkeywords}
 	
