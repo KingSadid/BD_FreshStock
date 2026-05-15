@@ -76,12 +76,12 @@ const create = async (data, userId) => {
       product_sku, batch_id: result.insertId,
       movement_type: 'purchase', quantity: initial_quantity,
       previous_quantity: 0, posterior_quantity: initial_quantity
-    }).catch(() => {});
+    }).catch(err => console.error('[Firebase Error] logMovement:', err.message));
 
     analytics.logStockSnapshot(userId, {
       product_sku, batch_id: result.insertId,
       current_quantity: initial_quantity, expiry_date
-    }).catch(() => {});
+    }).catch(err => console.error('[Firebase Error] logStockSnapshot:', err.message));
 
     return {
       batch_id: result.insertId,
@@ -131,12 +131,12 @@ const updateQuantity = async (batchId, data) => {
     product_sku: productSku, batch_id: batchId,
     movement_type: 'sale', quantity,
     previous_quantity: previous, posterior_quantity: posterior
-  }).catch(() => {});
+  }).catch(err => console.error('[Firebase Error] logMovement:', err.message));
 
   analytics.logStockSnapshot(user_id, {
     product_sku: productSku, batch_id: batchId,
     current_quantity: posterior, expiry_date: null
-  }).catch(() => {});
+  }).catch(err => console.error('[Firebase Error] logStockSnapshot:', err.message));
 
   return { message: 'Stock actualizado', new_quantity: posterior };
 };
@@ -186,7 +186,7 @@ const remove = async (batchId) => {
         expiry_date: batchInfo[0].expiry_date,
         was_consumed: false,
         quantity_expired: batchInfo[0].current_quantity
-      }).catch(() => {});
+      }).catch(err => console.error('[Firebase Error] logExpiryEvent:', err.message));
     }
   } catch (err) {
     await connection.rollback();

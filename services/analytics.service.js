@@ -10,7 +10,8 @@ const saveEvent = async (eventType, userId, data) => {
     data,
     metadata: { source: 'web', app_version: '1.0' }
   };
-  await db.collection(COLLECTION).add(doc);
+  const ref = await db.collection(COLLECTION).add(doc);
+  console.log(`[Firebase] Evento '${eventType}' guardado → ${ref.id}`);
 };
 
 const logMovement = async (userId, movement) => {

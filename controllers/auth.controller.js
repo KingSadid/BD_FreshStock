@@ -72,7 +72,7 @@ const login = asyncHandler(async (req, res) => {
     role: user.role,
     ip: req.ip,
     user_agent: req.get('user-agent')
-  }).catch(() => {});
+  }).catch(err => console.error('[Firebase Error] logUserSession:', err.message));
 
   res.json({
     user: {

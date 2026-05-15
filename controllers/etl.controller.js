@@ -16,6 +16,7 @@ const run = asyncHandler(async (req, res) => {
   }
 
   const events = await analytics.getAllEvents();
+  console.log(`[ETL] ${events.length} eventos encontrados en Firebase`);
   const results = { alerts: 0, movements: 0, sessions: 0, skipped: 0 };
 
   for (const event of events) {
