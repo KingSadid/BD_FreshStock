@@ -77,6 +77,9 @@ const ReportsScreen = {
       case 'waste':
         await this.loadWaste();
         break;
+      case 'firebase':
+        await this.loadFirebase();
+        break;
     }
   },
 
@@ -279,6 +282,216 @@ const ReportsScreen = {
       }
     } catch (error) {
       console.error('Error cargando reporte de merma:', error);
+    }
+  },
+
+  async loadFirebase() {
+    try {
+      const data = await api.getFirebaseReport();
+
+      // Summary cards
+      const summaryEl = document.getElementById('firebase-summary');
+      if (summaryEl) {
+        summaryEl.innerHTML = `
+          <div class="summary-card">
+            <div class="summary-icon" style="background: #dbeafe; color: #3b82f6;"><i class="fas fa-database"></i></div>
+            <div class="summary-data">
+              <span class="summary-value">${data.total_events}</span>
+              <span class="summary-label">Eventos Totales</span>
+            </div>
+          </div>
+          <div class="summary-card">
+            <div class="summary-icon" style="background: #d1fae5; color: #059669;"><i class="fas fa-layer-group"></i></div>
+            <div class="summary-data">
+              <span class="summary-value">${data.event_types}</span>
+              <span class="summary-label">Tipos de Evento</span>
+            </div>
+          </div>
+          <div class="summary-card">
+            <div class="summary-icon" style="background: #fef3c7; color: #d97706;"><i class="fas fa-calendar-day"></i></div>
+            <div class="summary-data">
+              <span class="summary-value">${data.timeline_7d.reduce((a, [,c]) => a + c, 0)}</span>
+              <span class="summary-label">Esta Semana</span>
+            </div>
+          </div>
+          <div class="summary-card">
+            <div class="summary-icon" style="background: #ede9fe; color: #7c3aed;"><i class="fas fa-fire"></i></div>
+            <div class="summary-data">
+              <span class="summary-value">${data.by_type[0]?.count || 0}</span>
+              <span class="summary-label">Más Frecuente</span>
+            </div>
+          </div>
+        `;
+      }
+
+      // Types visual bars
+      const typesEl = document.getElementById('firebase-types-chart');
+      if (typesEl) {
+        if (data.by_type.length === 0) {
+          typesEl.innerHTML = '<p class="text-center" style="padding:2rem;color:var(--text-muted)">No hay eventos registrados</p>';
+        } else {
+          const maxCount = Math.max(...data.by_type.map(t => t.count), 1);
+          const typeColors = {
+            inventory_movement: '#10b981',
+            product_view: '#6366f1',
+            user_session: '#3b82f6',
+            expiry_event: '#ef4444',
+            stock_snapshot: '#f59e0b'
+          };
+          const typeIcons = {
+            inventory_movement: 'fa-exchange-alt',
+            product_view: 'fa-eye',
+            user_session: 'fa-user-clock',
+            expiry_event: 'fa-calendar-times',
+            stock_snapshot: 'fa-boxes'
+          };
+          const typeLabels = {
+            inventory_movement: 'Movimientos',
+            product_view: 'Vistas Producto',
+            user_session: 'Sesiones',
+            expiry_event: 'Vencimientos',
+            stock_snapshot: 'Snapshots Stock'
+          };
+
+          typesEl.innerHTML = `
+            <div class="firebase-types-grid">
+              ${data.by_type.map(t => {
+                const pct = (t.count / maxCount * 100).toFixed(0);
+                const color = typeColors[t.type] || '#8b5cf6';
+                const icon = typeIcons[t.type] || 'fa-circle';
+                const label = typeLabels[t.type] || t.type;
+                return `
+                  <div class="firebase-type-card" style="border-left-color: ${color};">
+                    <div class="ft-icon" style="background: ${color}20; color: ${color};">
+                      <i class="fas ${icon}"></i>
+                    </div>
+                    <div class="ft-info">
+                      <span class="ft-label">${label}</span>
+                      <span class="ft-count">${t.count} eventos</span>
+                      <div class="ft-bar-track">
+                        <div class="ft-bar-fill" style="width: ${pct}%; background: ${color};"></div>
+                      </div>
+                    </div>
+                    <span class="ft-pct">${t.percentage}%</span>
+                  </div>
+                `;
+              }).join('')}
+            </div>
+          `;
+        }
+      }
+
+      // Donut chart
+      const donutTotal = document.getElementById('firebase-total-events');
+      if (donutTotal) donutTotal.textContent = data.total_events;
+
+      const donutSvg = document.getElementById('firebase-donut-svg');
+      const legendEl = document.getElementById('firebase-legend');
+      if (donutSvg && legendEl) {
+        const colors = ['#10b981', '#6366f1', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#3b82f6'];
+        const radius = 80;
+        const circumference = 2 * Math.PI * radius;
+        let offset = 0;
+
+        // Remove old segments except base circle and texts
+        donutSvg.querySelectorAll('.donut-seg-firebase').forEach(s => s.remove());
+
+        const legendItems = [];
+        data.by_type.forEach((t, i) => {
+          const pct = t.count / Math.max(data.total_events, 1);
+          const strokeDash = pct * circumference;
+          const color = colors[i % colors.length];
+
+          const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+          circle.setAttribute('cx', '100');
+          circle.setAttribute('cy', '100');
+          circle.setAttribute('r', '80');
+          circle.setAttribute('fill', 'none');
+          circle.setAttribute('stroke', color);
+          circle.setAttribute('stroke-width', '24');
+          circle.setAttribute('stroke-dasharray', `${strokeDash} ${circumference}`);
+          circle.setAttribute('stroke-dashoffset', -offset);
+          circle.setAttribute('class', 'donut-seg-firebase');
+          donutSvg.appendChild(circle);
+          offset += strokeDash;
+
+          legendItems.push(`
+            <div class="legend-item">
+              <span class="legend-dot" style="background:${color}"></span>
+              <span class="legend-label">${t.type}</span>
+              <span class="legend-val">${t.count}</span>
+            </div>
+          `);
+        });
+
+        // Re-append texts on top
+        const texts = donutSvg.querySelectorAll('text');
+        texts.forEach(t => donutSvg.appendChild(t));
+
+        legendEl.innerHTML = legendItems.join('');
+      }
+
+      // Timeline chart
+      const timelineEl = document.getElementById('firebase-timeline-chart');
+      if (timelineEl) {
+        if (data.timeline_7d.length === 0 || data.timeline_7d.every(([,c]) => c === 0)) {
+          timelineEl.innerHTML = '<p class="text-center" style="padding:2rem;color:var(--text-muted)">No hay datos de timeline</p>';
+        } else {
+          const maxVal = Math.max(...data.timeline_7d.map(([,c]) => c), 1);
+          const days = data.timeline_7d.map(([date]) => {
+            const d = new Date(date);
+            return ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'][d.getDay()];
+          });
+
+          const barHtml = data.timeline_7d.map(([date, count], i) => {
+            const pct = (count / maxVal * 100).toFixed(0);
+            const dayName = days[i];
+            return `
+              <div class="timeline-bar-item">
+                <div class="timeline-bar-track">
+                  <div class="timeline-bar-fill" style="height: ${pct}%;"></div>
+                </div>
+                <span class="timeline-bar-day">${dayName}</span>
+                <span class="timeline-bar-val">${count}</span>
+              </div>
+            `;
+          }).join('');
+
+          timelineEl.innerHTML = `<div class="timeline-bars">${barHtml}</div>`;
+        }
+      }
+
+      // Recent events
+      const recentEl = document.getElementById('firebase-recent-events');
+      if (recentEl) {
+        if (data.recent_events.length === 0) {
+          recentEl.innerHTML = '<p class="text-center" style="padding:1rem;color:var(--text-muted)">No hay eventos recientes</p>';
+        } else {
+          const eventColors = {
+            inventory_movement: 'green',
+            product_view: 'blue',
+            user_session: 'purple',
+            expiry_event: 'red',
+            stock_snapshot: 'orange'
+          };
+          recentEl.innerHTML = data.recent_events.slice(0, 10).map(e => {
+            const color = eventColors[e.event_type] || 'blue';
+            const date = e.timestamp ? new Date(e.timestamp).toLocaleString('es-CO') : 'N/A';
+            return `
+              <div class="activity-item">
+                <div class="activity-dot ${color}"></div>
+                <div class="activity-info">
+                  <span class="activity-text"><strong>${e.event_type}</strong> — ${e.user_id || 'Sistema'}</span>
+                  <span class="activity-time">${date}</span>
+                </div>
+              </div>
+            `;
+          }).join('');
+        }
+      }
+    } catch (error) {
+      console.error('Error cargando reporte Firebase:', error);
+      showToast('Error', 'No se pudo cargar el reporte de Firebase', 'error');
     }
   },
 

@@ -420,6 +420,9 @@
                 class="fas fa-sun"></i></button>
             <div class="search-bar"><i class="fas fa-search"></i><input type="text" placeholder="Buscar productos..."
                 id="product-search"></div>
+            <button class="btn-outline btn-sm btn-run-etl" style="display:none;" onclick="DashboardScreen.runETL()">
+              <i class="fas fa-database"></i> Ejecutar ETL
+            </button>
             <button class="icon-btn" data-navigate="screen-alerts"><i class="fas fa-bell"></i><span
                 class="notif-dot"></span></button>
           </div>
@@ -733,6 +736,9 @@
             <button class="icon-btn theme-toggle-btn" data-action="toggle-theme"><i class="fas fa-moon"></i><i
                 class="fas fa-sun"></i></button>
             <div class="search-bar"><i class="fas fa-search"></i><input type="text" placeholder="Buscar lotes..."></div>
+            <button class="btn-outline btn-sm btn-run-etl" style="display:none;" onclick="DashboardScreen.runETL()">
+              <i class="fas fa-database"></i> Ejecutar ETL
+            </button>
             <button class="btn-primary" data-navigate="screen-lot-register"><i class="fas fa-plus"></i> Nuevo
               Lote</button>
           </div>
@@ -822,6 +828,9 @@
           <div class="top-bar-right">
             <button class="icon-btn theme-toggle-btn" data-action="toggle-theme"><i class="fas fa-moon"></i><i
                 class="fas fa-sun"></i></button>
+            <button class="btn-outline btn-sm btn-run-etl" style="display:none;" onclick="DashboardScreen.runETL()">
+              <i class="fas fa-database"></i> Ejecutar ETL
+            </button>
             <button class="btn-outline"><i class="fas fa-check-double"></i> Marcar todas como leídas</button>
           </div>
         </header>
@@ -892,6 +901,9 @@
           <div class="top-bar-right">
             <button class="icon-btn theme-toggle-btn" data-action="toggle-theme"><i class="fas fa-moon"></i><i
                 class="fas fa-sun"></i></button>
+            <button class="btn-outline btn-sm btn-run-etl" style="display:none;" onclick="DashboardScreen.runETL()">
+              <i class="fas fa-database"></i> Ejecutar ETL
+            </button>
             <button class="btn-primary"><i class="fas fa-plus"></i> Nuevo Proveedor</button>
           </div>
         </header>
@@ -944,6 +956,9 @@
           <div class="top-bar-right">
             <button class="icon-btn theme-toggle-btn" data-action="toggle-theme"><i class="fas fa-moon"></i><i
                 class="fas fa-sun"></i></button>
+            <button class="btn-outline btn-sm btn-run-etl" style="display:none;" onclick="DashboardScreen.runETL()">
+              <i class="fas fa-database"></i> Ejecutar ETL
+            </button>
           </div>
         </header>
         <div class="content-area">
@@ -995,6 +1010,9 @@
           <div class="top-bar-right">
             <button class="icon-btn theme-toggle-btn" data-action="toggle-theme"><i class="fas fa-moon"></i><i
                 class="fas fa-sun"></i></button>
+            <button class="btn-outline btn-sm btn-run-etl" style="display:none;" onclick="DashboardScreen.runETL()">
+              <i class="fas fa-database"></i> Ejecutar ETL
+            </button>
           </div>
         </header>
         <div class="content-area">
@@ -1002,6 +1020,7 @@
             <button class="report-tab active" data-report="valuation"><i class="fas fa-coins"></i> Valoración de Inventario</button>
             <button class="report-tab" data-report="movements"><i class="fas fa-exchange-alt"></i> Historial de Movimientos</button>
             <button class="report-tab" data-report="waste"><i class="fas fa-trash-alt"></i> Reporte de Merma</button>
+            <button class="report-tab" data-report="firebase"><i class="fas fa-fire"></i> Reporte Firebase</button>
           </div>
 
           <div class="report-panel active" id="report-valuation">
@@ -1099,6 +1118,53 @@
                   <h3><i class="fas fa-chart-pie" style="color: #f59e0b; margin-right: 8px;"></i> Merma por Categoría</h3>
                 </div>
                 <div id="waste-category-chart">
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="report-panel" id="report-firebase">
+            <div class="report-header">
+              <div class="report-summary" id="firebase-summary"></div>
+              <div class="report-filters">
+                <button class="btn-primary btn-sm" id="firebase-refresh" onclick="ReportsScreen.loadFirebase()"><i class="fas fa-sync-alt"></i> Actualizar</button>
+              </div>
+            </div>
+            <div class="charts-row">
+              <div class="chart-card wide">
+                <div class="card-header">
+                  <h3><i class="fas fa-chart-bar" style="color: #6366f1; margin-right: 8px;"></i> Eventos por Tipo</h3>
+                </div>
+                <div id="firebase-types-chart" class="firebase-types-visual">
+                </div>
+              </div>
+              <div class="chart-card">
+                <div class="card-header">
+                  <h3><i class="fas fa-list" style="color: #10b981; margin-right: 8px;"></i> Distribución</h3>
+                </div>
+                <div id="firebase-donut-chart" class="donut-chart">
+                  <svg viewBox="0 0 200 200" class="donut-svg" id="firebase-donut-svg">
+                    <circle cx="100" cy="100" r="80" fill="none" stroke="var(--border)" stroke-width="24" />
+                    <text x="100" y="95" text-anchor="middle" fill="var(--text)" font-size="24" font-weight="700" id="firebase-total-events">0</text>
+                    <text x="100" y="115" text-anchor="middle" fill="var(--text-muted)" font-size="12">eventos</text>
+                  </svg>
+                  <div class="donut-legend" id="firebase-legend"></div>
+                </div>
+              </div>
+            </div>
+            <div class="charts-row">
+              <div class="chart-card">
+                <div class="card-header">
+                  <h3><i class="fas fa-chart-line" style="color: #3b82f6; margin-right: 8px;"></i> Timeline (Últimos 7 días)</h3>
+                </div>
+                <div id="firebase-timeline-chart">
+                </div>
+              </div>
+              <div class="chart-card">
+                <div class="card-header">
+                  <h3><i class="fas fa-history" style="color: #f59e0b; margin-right: 8px;"></i> Eventos Recientes</h3>
+                </div>
+                <div class="activity-list" id="firebase-recent-events">
                 </div>
               </div>
             </div>

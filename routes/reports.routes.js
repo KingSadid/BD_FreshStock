@@ -7,5 +7,6 @@ router.get('/inventory-valuation', authenticate, reportsController.inventoryValu
 router.get('/movement-history', authenticate, reportsController.movementHistory);
 router.get('/waste', authenticate, reportsController.wasteReport);
 router.get('/movement-types', authenticate, reportsController.movementTypes);
+router.get('/firebase', authenticate, reportsController.firebaseReport);
 
 module.exports = router;

@@ -1,4 +1,5 @@
 const reportsDao = require('../dao/reports.dao');
+const analyticsService = require('../services/analytics.service');
 const asyncHandler = require('../utils/asyncHandler');
 
 const inventoryValuation = asyncHandler(async (req, res) => {
@@ -21,4 +22,72 @@ const movementTypes = asyncHandler(async (req, res) => {
   res.json(data);
 });
 
-module.exports = { inventoryValuation, movementHistory, wasteReport, movementTypes };
+const firebaseReport = asyncHandler(async (req, res) => {
+  const allEvents = await analyticsService.getAllEvents();
+
+  // Aggregate by event type
+  const byType = {};
+  const timeline = {};
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const last7Days = {};
+  const last30Days = {};
+
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(today);
+    d.setDate(d.getDate() - i);
+    last7Days[d.toISOString().split('T')[0]] = 0;
+  }
+  for (let i = 0; i < 30; i++) {
+    const d = new Date(today);
+    d.setDate(d.getDate() - i);
+    last30Days[d.toISOString().split('T')[0]] = 0;
+  }
+
+  allEvents.forEach(event => {
+    const type = event.event_type || 'unknown';
+    if (!byType[type]) {
+      byType[type] = { count: 0, events: [] };
+    }
+    byType[type].count++;
+    byType[type].events.push(event);
+
+    // Timeline aggregation
+    const dateStr = event.timestamp && event.timestamp.toDate
+      ? event.timestamp.toDate().toISOString().split('T')[0]
+      : (event.timestamp ? new Date(event.timestamp).toISOString().split('T')[0] : null);
+
+    if (dateStr) {
+      if (timeline[dateStr]) timeline[dateStr]++;
+      else timeline[dateStr] = 1;
+
+      if (last7Days.hasOwnProperty(dateStr)) last7Days[dateStr]++;
+      if (last30Days.hasOwnProperty(dateStr)) last30Days[dateStr]++;
+    }
+  });
+
+  // Build summary
+  const summary = {
+    total_events: allEvents.length,
+    event_types: Object.keys(byType).length,
+    by_type: Object.entries(byType).map(([type, data]) => ({
+      type,
+      count: data.count,
+      percentage: allEvents.length > 0 ? ((data.count / allEvents.length) * 100).toFixed(1) : 0
+    })).sort((a, b) => b.count - a.count),
+    timeline_7d: Object.entries(last7Days).sort(([a], [b]) => a.localeCompare(b)),
+    timeline_30d: Object.entries(last30Days).sort(([a], [b]) => a.localeCompare(b)),
+    recent_events: allEvents.slice(0, 50).map(e => ({
+      id: e.id,
+      event_type: e.event_type,
+      timestamp: e.timestamp && e.timestamp.toDate ? e.timestamp.toDate().toISOString() : e.timestamp,
+      user_id: e.user_id,
+      data: e.data
+    }))
+  };
+
+  res.json(summary);
+});
+
+module.exports = { inventoryValuation, movementHistory, wasteReport, movementTypes, firebaseReport };

@@ -3217,3 +3217,515 @@ body {
   background: #fee2e2;
   color: #dc2626;
 }
+
+/* ===== FIREBASE REPORT STYLES ===== */
+.firebase-types-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1rem;
+  padding: 0.5rem 0;
+}
+
+.firebase-type-card {
+  background: var(--bg);
+  border-radius: var(--radius);
+  padding: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border: 1px solid var(--border);
+  border-left: 4px solid;
+  transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.35s ease;
+}
+
+.firebase-type-card:hover {
+  transform: translateY(-4px) scale(1.02);
+  box-shadow: var(--shadow-md);
+}
+
+.ft-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  flex-shrink: 0;
+}
+
+.ft-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ft-label {
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: var(--text);
+}
+
+.ft-count {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.ft-bar-track {
+  height: 6px;
+  background: var(--bg-card);
+  border-radius: 3px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+
+.ft-bar-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 1s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.ft-pct {
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+
+.timeline-bars {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-around;
+  gap: 12px;
+  padding: 1rem 0.5rem;
+  height: 200px;
+}
+
+.timeline-bar-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+}
+
+.timeline-bar-track {
+  width: 100%;
+  max-width: 40px;
+  height: 140px;
+  background: var(--bg);
+  border-radius: 8px;
+  overflow: hidden;
+  display: flex;
+  align-items: flex-end;
+  position: relative;
+}
+
+.timeline-bar-fill {
+  width: 100%;
+  border-radius: 0 0 8px 8px;
+  background: linear-gradient(180deg, #6366f1, #818cf8);
+  transition: height 1s cubic-bezier(0.34, 1.56, 0.64, 1);
+  min-height: 4px;
+}
+
+.timeline-bar-day {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.timeline-bar-val {
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+  font-weight: 700;
+}
+
+/* ===== JELLY / BOUNCY ANIMATIONS ===== */
+@keyframes jelly {
+  0% { transform: scale(1, 1); }
+  30% { transform: scale(1.25, 0.75); }
+  40% { transform: scale(0.75, 1.25); }
+  50% { transform: scale(1.15, 0.85); }
+  65% { transform: scale(0.95, 1.05); }
+  75% { transform: scale(1.05, 0.95); }
+  100% { transform: scale(1, 1); }
+}
+
+@keyframes jelly-soft {
+  0% { transform: scale(1, 1); }
+  25% { transform: scale(1.15, 0.85); }
+  40% { transform: scale(0.9, 1.1); }
+  60% { transform: scale(1.05, 0.95); }
+  100% { transform: scale(1, 1); }
+}
+
+@keyframes pop-in {
+  0% { opacity: 0; transform: scale(0.5); }
+  60% { opacity: 1; transform: scale(1.08); }
+  80% { transform: scale(0.96); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+@keyframes bounce-in-up {
+  0% { opacity: 0; transform: translateY(40px) scale(0.9); }
+  60% { opacity: 1; transform: translateY(-6px) scale(1.02); }
+  80% { transform: translateY(2px) scale(0.99); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes bounce-in-left {
+  0% { opacity: 0; transform: translateX(-30px) scale(0.95); }
+  60% { opacity: 1; transform: translateX(6px) scale(1.01); }
+  80% { transform: translateX(-2px) scale(0.99); }
+  100% { opacity: 1; transform: translateX(0) scale(1); }
+}
+
+@keyframes wobble {
+  0% { transform: rotate(0deg); }
+  15% { transform: rotate(-8deg); }
+  30% { transform: rotate(6deg); }
+  45% { transform: rotate(-4deg); }
+  60% { transform: rotate(2deg); }
+  75% { transform: rotate(-1deg); }
+  100% { transform: rotate(0deg); }
+}
+
+@keyframes breathe {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.06); }
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-4px); }
+  40% { transform: translateX(4px); }
+  60% { transform: translateX(-3px); }
+  80% { transform: translateX(3px); }
+}
+
+/* Jelly hover effects on interactive elements */
+.btn-primary,
+.btn-outline,
+.btn-danger,
+.btn-danger-outline,
+.btn-ghost,
+.chip,
+.report-tab,
+.icon-btn,
+.icon-btn-sm,
+.page-btn {
+  transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.35s ease, background 0.2s ease, border-color 0.2s ease;
+}
+
+.btn-primary:hover,
+.btn-outline:hover:not(:disabled),
+.btn-danger:hover,
+.btn-danger-outline:hover,
+.btn-ghost:hover {
+  transform: scale(1.08);
+}
+
+.btn-primary:active,
+.btn-outline:active,
+.btn-danger:active,
+.icon-btn:active,
+.chip:active,
+.report-tab:active {
+  transform: scale(0.92);
+}
+
+.chip:hover:not(.active) {
+  transform: scale(1.06);
+}
+
+.icon-btn:hover,
+.icon-btn-sm:hover {
+  transform: scale(1.12) rotate(4deg);
+}
+
+/* Cards jelly entrance and hover */
+.kpi-card,
+.product-card,
+.supplier-card,
+.user-card,
+.chart-card,
+.alert-item,
+.detail-card,
+.firebase-type-card {
+  animation: pop-in 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+.kpi-card:nth-child(1) { animation-delay: 0.05s; }
+.kpi-card:nth-child(2) { animation-delay: 0.12s; }
+.kpi-card:nth-child(3) { animation-delay: 0.19s; }
+.kpi-card:nth-child(4) { animation-delay: 0.26s; }
+
+.product-card:nth-child(1) { animation-delay: 0.05s; }
+.product-card:nth-child(2) { animation-delay: 0.1s; }
+.product-card:nth-child(3) { animation-delay: 0.15s; }
+.product-card:nth-child(4) { animation-delay: 0.2s; }
+.product-card:nth-child(5) { animation-delay: 0.25s; }
+.product-card:nth-child(6) { animation-delay: 0.3s; }
+
+.supplier-card:nth-child(1) { animation-delay: 0.05s; }
+.supplier-card:nth-child(2) { animation-delay: 0.12s; }
+.supplier-card:nth-child(3) { animation-delay: 0.19s; }
+.supplier-card:nth-child(4) { animation-delay: 0.26s; }
+
+.user-card:nth-child(1) { animation-delay: 0.05s; }
+.user-card:nth-child(2) { animation-delay: 0.1s; }
+.user-card:nth-child(3) { animation-delay: 0.15s; }
+.user-card:nth-child(4) { animation-delay: 0.2s; }
+.user-card:nth-child(5) { animation-delay: 0.25s; }
+.user-card:nth-child(6) { animation-delay: 0.3s; }
+
+/* Hover jelly on cards */
+.product-card:hover,
+.supplier-card:hover,
+.user-card:hover,
+.chart-card:hover,
+.alert-item:hover,
+.detail-card:hover,
+.kpi-card:hover {
+  transform: translateY(-6px) scale(1.02);
+  box-shadow: var(--shadow-lg);
+}
+
+/* Sidebar items bouncy feel */
+.sidebar-menu li {
+  transition: background 0.25s ease, color 0.25s ease, padding-left 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.sidebar-menu li:hover {
+  transform: translateX(6px) scale(1.02);
+  padding-left: 1.75rem;
+}
+
+.sidebar-menu li.active {
+  transform: scale(1.03);
+}
+
+.sidebar-menu li i {
+  transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.sidebar-menu li:hover i {
+  transform: scale(1.2) rotate(-8deg);
+}
+
+/* Sidebar header logo bounce */
+.logo-small i {
+  display: inline-block;
+  transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.sidebar-header:hover .logo-small i {
+  transform: scale(1.2) rotate(12deg);
+}
+
+/* Bouncy screen content entrance */
+.content-area > * {
+  animation: bounce-in-up 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+.content-area > *:nth-child(1) { animation-delay: 0.03s; }
+.content-area > *:nth-child(2) { animation-delay: 0.08s; }
+.content-area > *:nth-child(3) { animation-delay: 0.13s; }
+.content-area > *:nth-child(4) { animation-delay: 0.18s; }
+.content-area > *:nth-child(5) { animation-delay: 0.23s; }
+.content-area > *:nth-child(6) { animation-delay: 0.28s; }
+
+/* Table rows staggered bounce */
+.data-table tbody tr {
+  animation: bounce-in-left 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+.data-table tbody tr:nth-child(1) { animation-delay: 0.02s; }
+.data-table tbody tr:nth-child(2) { animation-delay: 0.05s; }
+.data-table tbody tr:nth-child(3) { animation-delay: 0.08s; }
+.data-table tbody tr:nth-child(4) { animation-delay: 0.11s; }
+.data-table tbody tr:nth-child(5) { animation-delay: 0.14s; }
+.data-table tbody tr:nth-child(6) { animation-delay: 0.17s; }
+.data-table tbody tr:nth-child(7) { animation-delay: 0.20s; }
+.data-table tbody tr:nth-child(8) { animation-delay: 0.23s; }
+.data-table tbody tr:nth-child(9) { animation-delay: 0.26s; }
+.data-table tbody tr:nth-child(10) { animation-delay: 0.29s; }
+
+/* Toast bouncy entrance */
+.toast.show {
+  animation: bounce-in-left 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* Badge breathing */
+.badge,
+.notif-dot {
+  animation: breathe 2.5s ease-in-out infinite;
+}
+
+/* Report tabs wobble on hover */
+.report-tab:hover {
+  animation: wobble 0.5s ease;
+}
+
+/* Slide panel bouncy open */
+.slide-panel.open {
+  animation: bounce-in-left 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* Loading spinner extra bouncy */
+.spinner > div {
+  animation: sk-bouncedelay 1.4s infinite ease-in-out both, breathe 1.4s infinite ease-in-out both;
+}
+
+/* Form inputs subtle jelly on focus */
+.input-icon input:focus,
+.form-select:focus,
+.form-textarea:focus {
+  animation: jelly-soft 0.4s ease;
+}
+
+/* Activity items stagger */
+.activity-list .activity-item {
+  animation: bounce-in-left 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+.activity-list .activity-item:nth-child(1) { animation-delay: 0.02s; }
+.activity-list .activity-item:nth-child(2) { animation-delay: 0.06s; }
+.activity-list .activity-item:nth-child(3) { animation-delay: 0.10s; }
+.activity-list .activity-item:nth-child(4) { animation-delay: 0.14s; }
+.activity-list .activity-item:nth-child(5) { animation-delay: 0.18s; }
+.activity-list .activity-item:nth-child(6) { animation-delay: 0.22s; }
+.activity-list .activity-item:nth-child(7) { animation-delay: 0.26s; }
+.activity-list .activity-item:nth-child(8) { animation-delay: 0.30s; }
+.activity-list .activity-item:nth-child(9) { animation-delay: 0.34s; }
+.activity-list .activity-item:nth-child(10) { animation-delay: 0.38s; }
+
+/* Welcome banner elements breathe */
+.wb-illustration i {
+  display: inline-block;
+  animation: breathe 3s ease-in-out infinite;
+}
+
+/* Login floating cards extra float with jelly */
+.float-card {
+  animation: float 6s ease-in-out infinite, breathe 4s ease-in-out infinite;
+}
+
+/* Pagination buttons jelly */
+.page-btn:hover {
+  transform: scale(1.15);
+}
+.page-btn:active {
+  transform: scale(0.9);
+}
+
+/* Donut chart segments animate in */
+.donut-seg,
+.donut-seg-firebase {
+  animation: pop-in 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+/* Scanner line wobble feel */
+.scanner-line {
+  animation: scan 2s ease-in-out infinite, breathe 2s ease-in-out infinite;
+}
+
+/* ETL button special jelly */
+.btn-run-etl:hover {
+  animation: jelly 0.7s ease;
+}
+
+/* Summary cards entrance */
+.summary-card {
+  animation: pop-in 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+/* Bar fills animate with jelly width */
+.waste-bar-fill,
+.ft-bar-fill {
+  animation: pop-in 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+/* Expiry items staggered bounce */
+.expiry-list .expiry-item {
+  animation: bounce-in-left 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+/* PEPS info banner subtle float */
+.peps-info-banner {
+  animation: bounce-in-up 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+/* Alert summary cards pop */
+.alert-sum-card {
+  animation: pop-in 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+.alert-sum-card:nth-child(1) { animation-delay: 0.05s; }
+.alert-sum-card:nth-child(2) { animation-delay: 0.12s; }
+.alert-sum-card:nth-child(3) { animation-delay: 0.19s; }
+.alert-sum-card:nth-child(4) { animation-delay: 0.26s; }
+
+/* Filters bar items entrance */
+.filters-bar > * {
+  animation: pop-in 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+/* Report panels fade with bounce */
+.report-panel.active {
+  animation: bounce-in-up 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+/* Login form elements stagger */
+.login-form .form-group {
+  animation: bounce-in-up 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+.login-form .form-group:nth-child(1) { animation-delay: 0.05s; }
+.login-form .form-group:nth-child(2) { animation-delay: 0.12s; }
+.login-form .form-group:nth-child(3) { animation-delay: 0.19s; }
+.login-form .form-group:nth-child(4) { animation-delay: 0.26s; }
+.login-form .form-group:nth-child(5) { animation-delay: 0.33s; }
+
+/* Button on login bounce */
+.login-form button[type="submit"] {
+  animation: pop-in 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) 0.4s both;
+}
+
+/* Hover on activity dots */
+.activity-dot {
+  transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.activity-item:hover .activity-dot {
+  transform: scale(1.5);
+}
+
+/* Chart card header icons wobble on hover */
+.card-header:hover h3 i {
+  display: inline-block;
+  animation: wobble 0.6s ease;
+}
+
+/* Timeline bars stagger entrance */
+.timeline-bar-item {
+  animation: pop-in 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+/* Smooth scrolling for all animated content */
+.content-area {
+  scroll-behavior: smooth;
+}
+
+/* Ensure animations don't break layout on reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

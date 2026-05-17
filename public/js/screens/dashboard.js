@@ -9,10 +9,9 @@ const DashboardScreen = {
         welcome.textContent = `¡Buenos días, ${AppState.user.name}!`;
       }
 
-      const etlBtn = document.getElementById('btn-run-etl');
-      if (etlBtn) {
-        etlBtn.style.display = AppState.user && AppState.user.role === 'admin' ? 'inline-flex' : 'none';
-      }
+      document.querySelectorAll('.btn-run-etl').forEach(btn => {
+        btn.style.display = AppState.user && AppState.user.role === 'admin' ? 'inline-flex' : 'none';
+      });
 
       const kpis = await api.getKPIs();
       document.getElementById('kpi-products').textContent = kpis.active_products;
@@ -209,7 +208,7 @@ const DashboardScreen = {
   },
 
   async runETL() {
-    const btn = document.getElementById('btn-run-etl');
+    const btn = document.querySelector('.screen.active .btn-run-etl');
     if (!btn) return;
     const original = btn.innerHTML;
     btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Ejecutando...';

@@ -129,5 +129,9 @@ const api = {
   runETL: () => fetch(`${API_BASE}/api/etl/run`, {
     method: 'POST',
     headers: { 'Authorization': `Bearer ${AppState.token}` }
+  }).then(r => r.json()),
+
+  getFirebaseReport: () => fetch(`${API_BASE}/api/reports/firebase`, {
+    headers: { 'Authorization': `Bearer ${AppState.token}` }
   }).then(r => r.json())
 };
