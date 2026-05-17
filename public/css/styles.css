@@ -3342,70 +3342,61 @@ body {
   font-weight: 700;
 }
 
-/* ===== JELLY / BOUNCY ANIMATIONS ===== */
+/* ===== SMOOTH / SUBTLE JELLY ANIMATIONS ===== */
+/* Soft cubic-bezier for elegant, fluid motion */
+:root {
+  --ease-smooth: cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  --ease-spring-soft: cubic-bezier(0.34, 1.2, 0.64, 1);
+}
+
 @keyframes jelly {
   0% { transform: scale(1, 1); }
-  30% { transform: scale(1.25, 0.75); }
-  40% { transform: scale(0.75, 1.25); }
-  50% { transform: scale(1.15, 0.85); }
-  65% { transform: scale(0.95, 1.05); }
-  75% { transform: scale(1.05, 0.95); }
+  25% { transform: scale(1.08, 0.94); }
+  45% { transform: scale(0.96, 1.04); }
+  65% { transform: scale(1.02, 0.98); }
+  85% { transform: scale(0.99, 1.01); }
   100% { transform: scale(1, 1); }
 }
 
 @keyframes jelly-soft {
   0% { transform: scale(1, 1); }
-  25% { transform: scale(1.15, 0.85); }
-  40% { transform: scale(0.9, 1.1); }
-  60% { transform: scale(1.05, 0.95); }
+  30% { transform: scale(1.05, 0.96); }
+  50% { transform: scale(0.97, 1.03); }
+  75% { transform: scale(1.01, 0.99); }
   100% { transform: scale(1, 1); }
 }
 
 @keyframes pop-in {
-  0% { opacity: 0; transform: scale(0.5); }
-  60% { opacity: 1; transform: scale(1.08); }
-  80% { transform: scale(0.96); }
-  100% { opacity: 1; transform: scale(1); }
+  0% { opacity: 0; transform: scale(0.92) translateY(6px); }
+  60% { opacity: 1; transform: scale(1.01) translateY(-2px); }
+  100% { opacity: 1; transform: scale(1) translateY(0); }
 }
 
-@keyframes bounce-in-up {
-  0% { opacity: 0; transform: translateY(40px) scale(0.9); }
-  60% { opacity: 1; transform: translateY(-6px) scale(1.02); }
-  80% { transform: translateY(2px) scale(0.99); }
-  100% { opacity: 1; transform: translateY(0) scale(1); }
+@keyframes fade-in-up {
+  0% { opacity: 0; transform: translateY(16px); }
+  100% { opacity: 1; transform: translateY(0); }
 }
 
-@keyframes bounce-in-left {
-  0% { opacity: 0; transform: translateX(-30px) scale(0.95); }
-  60% { opacity: 1; transform: translateX(6px) scale(1.01); }
-  80% { transform: translateX(-2px) scale(0.99); }
-  100% { opacity: 1; transform: translateX(0) scale(1); }
+@keyframes fade-in-left {
+  0% { opacity: 0; transform: translateX(-12px); }
+  100% { opacity: 1; transform: translateX(0); }
 }
 
-@keyframes wobble {
+@keyframes wobble-soft {
   0% { transform: rotate(0deg); }
-  15% { transform: rotate(-8deg); }
-  30% { transform: rotate(6deg); }
-  45% { transform: rotate(-4deg); }
-  60% { transform: rotate(2deg); }
-  75% { transform: rotate(-1deg); }
+  20% { transform: rotate(-2deg); }
+  40% { transform: rotate(1.5deg); }
+  60% { transform: rotate(-0.8deg); }
+  80% { transform: rotate(0.3deg); }
   100% { transform: rotate(0deg); }
 }
 
 @keyframes breathe {
   0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.06); }
+  50% { transform: scale(1.03); }
 }
 
-@keyframes shake {
-  0%, 100% { transform: translateX(0); }
-  20% { transform: translateX(-4px); }
-  40% { transform: translateX(4px); }
-  60% { transform: translateX(-3px); }
-  80% { transform: translateX(3px); }
-}
-
-/* Jelly hover effects on interactive elements */
+/* Smooth hover effects on interactive elements */
 .btn-primary,
 .btn-outline,
 .btn-danger,
@@ -3416,7 +3407,7 @@ body {
 .icon-btn,
 .icon-btn-sm,
 .page-btn {
-  transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.35s ease, background 0.2s ease, border-color 0.2s ease;
+  transition: transform 0.45s var(--ease-spring-soft), box-shadow 0.45s ease, background 0.25s ease, border-color 0.25s ease;
 }
 
 .btn-primary:hover,
@@ -3424,7 +3415,7 @@ body {
 .btn-danger:hover,
 .btn-danger-outline:hover,
 .btn-ghost:hover {
-  transform: scale(1.08);
+  transform: scale(1.04);
 }
 
 .btn-primary:active,
@@ -3433,19 +3424,19 @@ body {
 .icon-btn:active,
 .chip:active,
 .report-tab:active {
-  transform: scale(0.92);
+  transform: scale(0.97);
 }
 
 .chip:hover:not(.active) {
-  transform: scale(1.06);
+  transform: scale(1.03);
 }
 
 .icon-btn:hover,
 .icon-btn-sm:hover {
-  transform: scale(1.12) rotate(4deg);
+  transform: scale(1.06) rotate(2deg);
 }
 
-/* Cards jelly entrance and hover */
+/* Cards smooth entrance and hover */
 .kpi-card,
 .product-card,
 .supplier-card,
@@ -3454,34 +3445,34 @@ body {
 .alert-item,
 .detail-card,
 .firebase-type-card {
-  animation: pop-in 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  animation: pop-in 0.7s var(--ease-smooth) both;
 }
 
-.kpi-card:nth-child(1) { animation-delay: 0.05s; }
+.kpi-card:nth-child(1) { animation-delay: 0.06s; }
 .kpi-card:nth-child(2) { animation-delay: 0.12s; }
-.kpi-card:nth-child(3) { animation-delay: 0.19s; }
-.kpi-card:nth-child(4) { animation-delay: 0.26s; }
+.kpi-card:nth-child(3) { animation-delay: 0.18s; }
+.kpi-card:nth-child(4) { animation-delay: 0.24s; }
 
-.product-card:nth-child(1) { animation-delay: 0.05s; }
-.product-card:nth-child(2) { animation-delay: 0.1s; }
-.product-card:nth-child(3) { animation-delay: 0.15s; }
-.product-card:nth-child(4) { animation-delay: 0.2s; }
-.product-card:nth-child(5) { animation-delay: 0.25s; }
-.product-card:nth-child(6) { animation-delay: 0.3s; }
+.product-card:nth-child(1) { animation-delay: 0.06s; }
+.product-card:nth-child(2) { animation-delay: 0.10s; }
+.product-card:nth-child(3) { animation-delay: 0.14s; }
+.product-card:nth-child(4) { animation-delay: 0.18s; }
+.product-card:nth-child(5) { animation-delay: 0.22s; }
+.product-card:nth-child(6) { animation-delay: 0.26s; }
 
-.supplier-card:nth-child(1) { animation-delay: 0.05s; }
+.supplier-card:nth-child(1) { animation-delay: 0.06s; }
 .supplier-card:nth-child(2) { animation-delay: 0.12s; }
-.supplier-card:nth-child(3) { animation-delay: 0.19s; }
-.supplier-card:nth-child(4) { animation-delay: 0.26s; }
+.supplier-card:nth-child(3) { animation-delay: 0.18s; }
+.supplier-card:nth-child(4) { animation-delay: 0.24s; }
 
-.user-card:nth-child(1) { animation-delay: 0.05s; }
-.user-card:nth-child(2) { animation-delay: 0.1s; }
-.user-card:nth-child(3) { animation-delay: 0.15s; }
-.user-card:nth-child(4) { animation-delay: 0.2s; }
-.user-card:nth-child(5) { animation-delay: 0.25s; }
-.user-card:nth-child(6) { animation-delay: 0.3s; }
+.user-card:nth-child(1) { animation-delay: 0.06s; }
+.user-card:nth-child(2) { animation-delay: 0.10s; }
+.user-card:nth-child(3) { animation-delay: 0.14s; }
+.user-card:nth-child(4) { animation-delay: 0.18s; }
+.user-card:nth-child(5) { animation-delay: 0.22s; }
+.user-card:nth-child(6) { animation-delay: 0.26s; }
 
-/* Hover jelly on cards */
+/* Hover smooth lift on cards */
 .product-card:hover,
 .supplier-card:hover,
 .user-card:hover,
@@ -3489,229 +3480,229 @@ body {
 .alert-item:hover,
 .detail-card:hover,
 .kpi-card:hover {
-  transform: translateY(-6px) scale(1.02);
+  transform: translateY(-4px) scale(1.01);
   box-shadow: var(--shadow-lg);
 }
 
-/* Sidebar items bouncy feel */
+/* Sidebar items smooth feel */
 .sidebar-menu li {
-  transition: background 0.25s ease, color 0.25s ease, padding-left 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transition: background 0.35s ease, color 0.35s ease, padding-left 0.45s var(--ease-spring-soft), transform 0.4s var(--ease-spring-soft);
 }
 
 .sidebar-menu li:hover {
-  transform: translateX(6px) scale(1.02);
-  padding-left: 1.75rem;
+  transform: translateX(4px) scale(1.01);
+  padding-left: 1.65rem;
 }
 
 .sidebar-menu li.active {
-  transform: scale(1.03);
+  transform: scale(1.01);
 }
 
 .sidebar-menu li i {
-  transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transition: transform 0.5s var(--ease-spring-soft);
 }
 
 .sidebar-menu li:hover i {
-  transform: scale(1.2) rotate(-8deg);
+  transform: scale(1.1) rotate(-4deg);
 }
 
-/* Sidebar header logo bounce */
+/* Sidebar header logo gentle motion */
 .logo-small i {
   display: inline-block;
-  transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transition: transform 0.5s var(--ease-spring-soft);
 }
 
 .sidebar-header:hover .logo-small i {
-  transform: scale(1.2) rotate(12deg);
+  transform: scale(1.1) rotate(6deg);
 }
 
-/* Bouncy screen content entrance */
+/* Smooth screen content entrance */
 .content-area > * {
-  animation: bounce-in-up 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  animation: fade-in-up 0.6s var(--ease-smooth) both;
 }
 
-.content-area > *:nth-child(1) { animation-delay: 0.03s; }
-.content-area > *:nth-child(2) { animation-delay: 0.08s; }
-.content-area > *:nth-child(3) { animation-delay: 0.13s; }
-.content-area > *:nth-child(4) { animation-delay: 0.18s; }
-.content-area > *:nth-child(5) { animation-delay: 0.23s; }
-.content-area > *:nth-child(6) { animation-delay: 0.28s; }
+.content-area > *:nth-child(1) { animation-delay: 0.04s; }
+.content-area > *:nth-child(2) { animation-delay: 0.09s; }
+.content-area > *:nth-child(3) { animation-delay: 0.14s; }
+.content-area > *:nth-child(4) { animation-delay: 0.19s; }
+.content-area > *:nth-child(5) { animation-delay: 0.24s; }
+.content-area > *:nth-child(6) { animation-delay: 0.29s; }
 
-/* Table rows staggered bounce */
+/* Table rows staggered smooth entrance */
 .data-table tbody tr {
-  animation: bounce-in-left 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  animation: fade-in-left 0.5s var(--ease-smooth) both;
 }
 
-.data-table tbody tr:nth-child(1) { animation-delay: 0.02s; }
-.data-table tbody tr:nth-child(2) { animation-delay: 0.05s; }
-.data-table tbody tr:nth-child(3) { animation-delay: 0.08s; }
-.data-table tbody tr:nth-child(4) { animation-delay: 0.11s; }
-.data-table tbody tr:nth-child(5) { animation-delay: 0.14s; }
-.data-table tbody tr:nth-child(6) { animation-delay: 0.17s; }
-.data-table tbody tr:nth-child(7) { animation-delay: 0.20s; }
-.data-table tbody tr:nth-child(8) { animation-delay: 0.23s; }
-.data-table tbody tr:nth-child(9) { animation-delay: 0.26s; }
-.data-table tbody tr:nth-child(10) { animation-delay: 0.29s; }
+.data-table tbody tr:nth-child(1) { animation-delay: 0.03s; }
+.data-table tbody tr:nth-child(2) { animation-delay: 0.06s; }
+.data-table tbody tr:nth-child(3) { animation-delay: 0.09s; }
+.data-table tbody tr:nth-child(4) { animation-delay: 0.12s; }
+.data-table tbody tr:nth-child(5) { animation-delay: 0.15s; }
+.data-table tbody tr:nth-child(6) { animation-delay: 0.18s; }
+.data-table tbody tr:nth-child(7) { animation-delay: 0.21s; }
+.data-table tbody tr:nth-child(8) { animation-delay: 0.24s; }
+.data-table tbody tr:nth-child(9) { animation-delay: 0.27s; }
+.data-table tbody tr:nth-child(10) { animation-delay: 0.30s; }
 
-/* Toast bouncy entrance */
+/* Toast smooth entrance */
 .toast.show {
-  animation: bounce-in-left 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+  animation: fade-in-left 0.55s var(--ease-smooth);
 }
 
-/* Badge breathing */
+/* Badge gentle breathing */
 .badge,
 .notif-dot {
-  animation: breathe 2.5s ease-in-out infinite;
+  animation: breathe 3.5s ease-in-out infinite;
 }
 
-/* Report tabs wobble on hover */
+/* Report tabs gentle wobble on hover */
 .report-tab:hover {
-  animation: wobble 0.5s ease;
+  animation: wobble-soft 0.6s ease;
 }
 
-/* Slide panel bouncy open */
+/* Slide panel smooth open */
 .slide-panel.open {
-  animation: bounce-in-left 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
+  animation: fade-in-left 0.55s var(--ease-smooth);
 }
 
-/* Loading spinner extra bouncy */
+/* Loading spinner gentle bounce */
 .spinner > div {
-  animation: sk-bouncedelay 1.4s infinite ease-in-out both, breathe 1.4s infinite ease-in-out both;
+  animation: sk-bouncedelay 1.4s infinite ease-in-out both, breathe 2s infinite ease-in-out both;
 }
 
-/* Form inputs subtle jelly on focus */
+/* Form inputs subtle soft jelly on focus */
 .input-icon input:focus,
 .form-select:focus,
 .form-textarea:focus {
-  animation: jelly-soft 0.4s ease;
+  animation: jelly-soft 0.5s ease;
 }
 
 /* Activity items stagger */
 .activity-list .activity-item {
-  animation: bounce-in-left 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  animation: fade-in-left 0.5s var(--ease-smooth) both;
 }
 
-.activity-list .activity-item:nth-child(1) { animation-delay: 0.02s; }
-.activity-list .activity-item:nth-child(2) { animation-delay: 0.06s; }
-.activity-list .activity-item:nth-child(3) { animation-delay: 0.10s; }
-.activity-list .activity-item:nth-child(4) { animation-delay: 0.14s; }
-.activity-list .activity-item:nth-child(5) { animation-delay: 0.18s; }
-.activity-list .activity-item:nth-child(6) { animation-delay: 0.22s; }
-.activity-list .activity-item:nth-child(7) { animation-delay: 0.26s; }
-.activity-list .activity-item:nth-child(8) { animation-delay: 0.30s; }
-.activity-list .activity-item:nth-child(9) { animation-delay: 0.34s; }
-.activity-list .activity-item:nth-child(10) { animation-delay: 0.38s; }
+.activity-list .activity-item:nth-child(1) { animation-delay: 0.03s; }
+.activity-list .activity-item:nth-child(2) { animation-delay: 0.07s; }
+.activity-list .activity-item:nth-child(3) { animation-delay: 0.11s; }
+.activity-list .activity-item:nth-child(4) { animation-delay: 0.15s; }
+.activity-list .activity-item:nth-child(5) { animation-delay: 0.19s; }
+.activity-list .activity-item:nth-child(6) { animation-delay: 0.23s; }
+.activity-list .activity-item:nth-child(7) { animation-delay: 0.27s; }
+.activity-list .activity-item:nth-child(8) { animation-delay: 0.31s; }
+.activity-list .activity-item:nth-child(9) { animation-delay: 0.35s; }
+.activity-list .activity-item:nth-child(10) { animation-delay: 0.39s; }
 
-/* Welcome banner elements breathe */
+/* Welcome banner elements gentle breathe */
 .wb-illustration i {
   display: inline-block;
-  animation: breathe 3s ease-in-out infinite;
+  animation: breathe 4s ease-in-out infinite;
 }
 
-/* Login floating cards extra float with jelly */
+/* Login floating cards smooth float */
 .float-card {
-  animation: float 6s ease-in-out infinite, breathe 4s ease-in-out infinite;
+  animation: float 6s ease-in-out infinite, breathe 5s ease-in-out infinite;
 }
 
-/* Pagination buttons jelly */
+/* Pagination buttons soft scale */
 .page-btn:hover {
-  transform: scale(1.15);
+  transform: scale(1.08);
 }
 .page-btn:active {
-  transform: scale(0.9);
+  transform: scale(0.95);
 }
 
-/* Donut chart segments animate in */
+/* Donut chart segments smooth animate in */
 .donut-seg,
 .donut-seg-firebase {
-  animation: pop-in 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  animation: pop-in 1s var(--ease-smooth) both;
 }
 
-/* Scanner line wobble feel */
+/* Scanner line smooth feel */
 .scanner-line {
-  animation: scan 2s ease-in-out infinite, breathe 2s ease-in-out infinite;
+  animation: scan 2s ease-in-out infinite, breathe 3s ease-in-out infinite;
 }
 
-/* ETL button special jelly */
+/* ETL button soft jelly */
 .btn-run-etl:hover {
-  animation: jelly 0.7s ease;
+  animation: jelly-soft 0.8s ease;
 }
 
-/* Summary cards entrance */
+/* Summary cards smooth entrance */
 .summary-card {
-  animation: pop-in 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  animation: pop-in 0.6s var(--ease-smooth) both;
 }
 
-/* Bar fills animate with jelly width */
+/* Bar fills smooth animate */
 .waste-bar-fill,
 .ft-bar-fill {
-  animation: pop-in 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  animation: pop-in 1s var(--ease-smooth) both;
 }
 
-/* Expiry items staggered bounce */
+/* Expiry items staggered smooth entrance */
 .expiry-list .expiry-item {
-  animation: bounce-in-left 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  animation: fade-in-left 0.45s var(--ease-smooth) both;
 }
 
-/* PEPS info banner subtle float */
+/* PEPS info banner smooth float */
 .peps-info-banner {
-  animation: bounce-in-up 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  animation: fade-in-up 0.55s var(--ease-smooth) both;
 }
 
-/* Alert summary cards pop */
+/* Alert summary cards pop smooth */
 .alert-sum-card {
-  animation: pop-in 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  animation: pop-in 0.6s var(--ease-smooth) both;
 }
 
-.alert-sum-card:nth-child(1) { animation-delay: 0.05s; }
+.alert-sum-card:nth-child(1) { animation-delay: 0.06s; }
 .alert-sum-card:nth-child(2) { animation-delay: 0.12s; }
-.alert-sum-card:nth-child(3) { animation-delay: 0.19s; }
-.alert-sum-card:nth-child(4) { animation-delay: 0.26s; }
+.alert-sum-card:nth-child(3) { animation-delay: 0.18s; }
+.alert-sum-card:nth-child(4) { animation-delay: 0.24s; }
 
 /* Filters bar items entrance */
 .filters-bar > * {
-  animation: pop-in 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  animation: pop-in 0.5s var(--ease-smooth) both;
 }
 
-/* Report panels fade with bounce */
+/* Report panels smooth fade */
 .report-panel.active {
-  animation: bounce-in-up 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  animation: fade-in-up 0.5s var(--ease-smooth) both;
 }
 
 /* Login form elements stagger */
 .login-form .form-group {
-  animation: bounce-in-up 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  animation: fade-in-up 0.55s var(--ease-smooth) both;
 }
 
-.login-form .form-group:nth-child(1) { animation-delay: 0.05s; }
+.login-form .form-group:nth-child(1) { animation-delay: 0.06s; }
 .login-form .form-group:nth-child(2) { animation-delay: 0.12s; }
-.login-form .form-group:nth-child(3) { animation-delay: 0.19s; }
-.login-form .form-group:nth-child(4) { animation-delay: 0.26s; }
-.login-form .form-group:nth-child(5) { animation-delay: 0.33s; }
+.login-form .form-group:nth-child(3) { animation-delay: 0.18s; }
+.login-form .form-group:nth-child(4) { animation-delay: 0.24s; }
+.login-form .form-group:nth-child(5) { animation-delay: 0.30s; }
 
-/* Button on login bounce */
+/* Button on login smooth pop */
 .login-form button[type="submit"] {
-  animation: pop-in 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) 0.4s both;
+  animation: pop-in 0.65s var(--ease-smooth) 0.35s both;
 }
 
 /* Hover on activity dots */
 .activity-dot {
-  transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transition: transform 0.5s var(--ease-spring-soft);
 }
 
 .activity-item:hover .activity-dot {
-  transform: scale(1.5);
+  transform: scale(1.25);
 }
 
-/* Chart card header icons wobble on hover */
+/* Chart card header icons gentle wobble on hover */
 .card-header:hover h3 i {
   display: inline-block;
-  animation: wobble 0.6s ease;
+  animation: wobble-soft 0.7s ease;
 }
 
 /* Timeline bars stagger entrance */
 .timeline-bar-item {
-  animation: pop-in 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  animation: pop-in 0.6s var(--ease-smooth) both;
 }
 
 /* Smooth scrolling for all animated content */
