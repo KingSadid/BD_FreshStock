@@ -3710,6 +3710,201 @@ body {
   scroll-behavior: smooth;
 }
 
+/* ===== MYSQL VERIFICATION SECTION ===== */
+.mysql-verify-section {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.mysql-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  padding: 2rem;
+  color: var(--text-muted);
+}
+
+.mysql-loading .spinner > div {
+  width: 12px;
+  height: 12px;
+}
+
+.mysql-summary-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+}
+
+.mysql-kpi-card {
+  background: var(--bg);
+  border-radius: var(--radius);
+  padding: 1.25rem;
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  border: 1px solid var(--border);
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.45s var(--ease-spring-soft), box-shadow 0.45s ease;
+}
+
+.mysql-kpi-card:hover {
+  transform: translateY(-3px) scale(1.01);
+  box-shadow: var(--shadow-md);
+}
+
+.mysql-kpi-card.sync-ok {
+  border-left: 4px solid var(--primary);
+}
+
+.mysql-kpi-card.sync-empty {
+  border-left: 4px solid var(--text-muted);
+  opacity: 0.85;
+}
+
+.mysql-kpi-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.3rem;
+  background: var(--primary-light);
+  color: var(--primary);
+  flex-shrink: 0;
+}
+
+.mysql-kpi-card.sync-empty .mysql-kpi-icon {
+  background: #e2e8f0;
+  color: #94a3b8;
+}
+
+.mysql-kpi-data {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  gap: 4px;
+}
+
+.mysql-kpi-value {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: var(--text);
+}
+
+.mysql-kpi-label {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.mysql-kpi-meta {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+}
+
+.sync-badge {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.sync-badge.ok {
+  background: var(--primary-light);
+  color: var(--primary-dark);
+}
+
+.sync-badge.empty {
+  background: #f1f5f9;
+  color: var(--text-muted);
+}
+
+.mysql-no-data {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 1.25rem;
+  background: #fef3c7;
+  border-radius: var(--radius-sm);
+  color: #92400e;
+  font-size: 0.9rem;
+  border: 1px solid #fde68a;
+}
+
+.mysql-no-data i {
+  font-size: 1.2rem;
+  color: #d97706;
+}
+
+.mysql-table-section {
+  background: var(--bg);
+  border-radius: var(--radius);
+  padding: 1.25rem;
+  border: 1px solid var(--border);
+}
+
+.mysql-table-section h4 {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 0.95rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.mysql-verify-table thead th {
+  background: var(--bg-card);
+  font-size: 0.75rem;
+  padding: 10px 12px;
+}
+
+.mysql-verify-table tbody td {
+  font-size: 0.8rem;
+  padding: 10px 12px;
+}
+
+.mysql-verify-table tbody tr {
+  animation: fade-in-left 0.45s var(--ease-smooth) both;
+}
+
+.mysql-verify-table tbody tr:nth-child(1) { animation-delay: 0.03s; }
+.mysql-verify-table tbody tr:nth-child(2) { animation-delay: 0.06s; }
+.mysql-verify-table tbody tr:nth-child(3) { animation-delay: 0.09s; }
+.mysql-verify-table tbody tr:nth-child(4) { animation-delay: 0.12s; }
+.mysql-verify-table tbody tr:nth-child(5) { animation-delay: 0.15s; }
+
+.mysql-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 2rem;
+  color: var(--danger);
+  text-align: center;
+}
+
+.mysql-error i {
+  font-size: 2rem;
+}
+
+.mysql-error .text-muted {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
 /* Ensure animations don't break layout on reduced motion preference */
 @media (prefers-reduced-motion: reduce) {
   *,

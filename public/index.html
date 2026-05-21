@@ -1168,6 +1168,17 @@
                 </div>
               </div>
             </div>
+
+            <!-- SECCION VERIFICACION MYSQL -->
+            <div class="chart-card wide" style="margin-top: 1.5rem;">
+              <div class="card-header">
+                <h3><i class="fas fa-database" style="color: #10b981; margin-right: 8px;"></i> Verificación en Base de Datos MySQL</h3>
+                <button class="btn-primary btn-sm" id="btn-verify-mysql" onclick="ReportsScreen.loadMySQLVerification()"><i class="fas fa-sync-alt"></i> Verificar sincronización</button>
+              </div>
+              <div id="mysql-verification-content">
+                <p class="text-center" style="padding: 2rem; color: var(--text-muted);">Presiona "Verificar sincronización" para consultar el estado actual de las entidades en MySQL.</p>
+              </div>
+            </div>
           </div>
         </div>
       </main>

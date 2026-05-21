@@ -133,5 +133,9 @@ const api = {
 
   getFirebaseReport: () => fetch(`${API_BASE}/api/reports/firebase`, {
     headers: { 'Authorization': `Bearer ${AppState.token}` }
+  }).then(r => r.json()),
+
+  getMySQLVerification: () => fetch(`${API_BASE}/api/reports/mysql-verification`, {
+    headers: { 'Authorization': `Bearer ${AppState.token}` }
   }).then(r => r.json())
 };

@@ -90,4 +90,70 @@ const firebaseReport = asyncHandler(async (req, res) => {
   res.json(summary);
 });
 
-module.exports = { inventoryValuation, movementHistory, wasteReport, movementTypes, firebaseReport };
+const mysqlVerification = asyncHandler(async (req, res) => {
+  const db = require('../services/mysql.service');
+
+  // Count movements imported from Firebase
+  const [movementCountRows] = await db.query(
+    `SELECT COUNT(*) as total, MAX(datetime) as last_date 
+     FROM movement 
+     WHERE reason LIKE '%Firebase%' OR reason LIKE '%ETL%'`
+  );
+
+  // Count alerts imported from Firebase
+  const [alertCountRows] = await db.query(
+    `SELECT COUNT(*) as total, MAX(created_at) as last_date 
+     FROM alert 
+     WHERE title LIKE 'Lote #%'`
+  );
+
+  // Count sessions imported from Firebase
+  const [sessionCountRows] = await db.query(
+    `SELECT COUNT(*) as total, MAX(start_time) as last_date 
+     FROM audit_session 
+     WHERE token_hash = 'etl-import'`
+  );
+
+  // Latest 5 movements
+  const [movementRows] = await db.query(
+    `SELECT m.movement_id, m.batch_id, mt.name as movement_type, m.quantity, 
+            m.previous_quantity, m.posterior_quantity, m.reason, m.datetime
+     FROM movement m
+     INNER JOIN movement_type mt ON m.movement_type_id = mt.movement_type_id
+     WHERE m.reason LIKE '%Firebase%'
+     ORDER BY m.datetime DESC
+     LIMIT 5`
+  );
+
+  // Latest 5 alerts
+  const [alertRows] = await db.query(
+    `SELECT a.alert_id, at.name as alert_type, at.priority, a.title, a.message, a.is_read, a.created_at
+     FROM alert a
+     INNER JOIN alert_type at ON a.alert_type_id = at.alert_type_id
+     WHERE a.title LIKE 'Lote #%'
+     ORDER BY a.created_at DESC
+     LIMIT 5`
+  );
+
+  // Latest 5 sessions
+  const [sessionRows] = await db.query(
+    `SELECT session_id, user_id, ip_address, user_agent, start_time, is_active
+     FROM audit_session
+     WHERE token_hash = 'etl-import'
+     ORDER BY start_time DESC
+     LIMIT 5`
+  );
+
+  res.json({
+    counts: {
+      movements: movementCountRows[0],
+      alerts: alertCountRows[0],
+      sessions: sessionCountRows[0]
+    },
+    movements: movementRows,
+    alerts: alertRows,
+    sessions: sessionRows
+  });
+});
+
+module.exports = { inventoryValuation, movementHistory, wasteReport, movementTypes, firebaseReport, mysqlVerification };

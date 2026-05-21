@@ -495,6 +495,185 @@ const ReportsScreen = {
     }
   },
 
+  async loadMySQLVerification() {
+    const container = document.getElementById('mysql-verification-content');
+    if (!container) return;
+
+    container.innerHTML = `
+      <div class="mysql-loading">
+        <div class="spinner"><div class="bounce1"></div><div class="bounce2"></div><div class="bounce3"></div></div>
+        <p>Consultando entidades en MySQL...</p>
+      </div>
+    `;
+
+    try {
+      const data = await api.getMySQLVerification();
+
+      const movCount = data.counts.movements?.total || 0;
+      const alertCount = data.counts.alerts?.total || 0;
+      const sessCount = data.counts.sessions?.total || 0;
+      const movDate = data.counts.movements?.last_date ? new Date(data.counts.movements.last_date).toLocaleString('es-CO') : 'Sin registros';
+      const alertDate = data.counts.alerts?.last_date ? new Date(data.counts.alerts.last_date).toLocaleString('es-CO') : 'Sin registros';
+      const sessDate = data.counts.sessions?.last_date ? new Date(data.counts.sessions.last_date).toLocaleString('es-CO') : 'Sin registros';
+
+      const hasData = movCount > 0 || alertCount > 0 || sessCount > 0;
+
+      container.innerHTML = `
+        <div class="mysql-verify-section">
+          <!-- KPIs de conteo -->
+          <div class="mysql-summary-row">
+            <div class="mysql-kpi-card ${movCount > 0 ? 'sync-ok' : 'sync-empty'}">
+              <div class="mysql-kpi-icon"><i class="fas fa-exchange-alt"></i></div>
+              <div class="mysql-kpi-data">
+                <span class="mysql-kpi-value">${movCount}</span>
+                <span class="mysql-kpi-label">Movimientos de Inventario Importados</span>
+                <span class="mysql-kpi-meta">Último: ${movDate}</span>
+              </div>
+              ${movCount > 0 ? '<span class="sync-badge ok"><i class="fas fa-check-circle"></i> Sincronizado</span>' : '<span class="sync-badge empty">Pendiente</span>'}
+            </div>
+            <div class="mysql-kpi-card ${alertCount > 0 ? 'sync-ok' : 'sync-empty'}">
+              <div class="mysql-kpi-icon"><i class="fas fa-bell"></i></div>
+              <div class="mysql-kpi-data">
+                <span class="mysql-kpi-value">${alertCount}</span>
+                <span class="mysql-kpi-label">Alertas de Vencimiento Importadas</span>
+                <span class="mysql-kpi-meta">Último: ${alertDate}</span>
+              </div>
+              ${alertCount > 0 ? '<span class="sync-badge ok"><i class="fas fa-check-circle"></i> Sincronizado</span>' : '<span class="sync-badge empty">Pendiente</span>'}
+            </div>
+            <div class="mysql-kpi-card ${sessCount > 0 ? 'sync-ok' : 'sync-empty'}">
+              <div class="mysql-kpi-icon"><i class="fas fa-user-clock"></i></div>
+              <div class="mysql-kpi-data">
+                <span class="mysql-kpi-value">${sessCount}</span>
+                <span class="mysql-kpi-label">Sesiones de Usuario Importadas</span>
+                <span class="mysql-kpi-meta">Último: ${sessDate}</span>
+              </div>
+              ${sessCount > 0 ? '<span class="sync-badge ok"><i class="fas fa-check-circle"></i> Sincronizado</span>' : '<span class="sync-badge empty">Pendiente</span>'}
+            </div>
+          </div>
+
+          ${!hasData ? '<div class="mysql-no-data"><i class="fas fa-info-circle"></i> No se encontraron registros importados desde Firebase. Ejecuta el proceso ETL para sincronizar los datos.</div>' : ''}
+
+          <!-- Tabla Movimientos -->
+          ${data.movements.length > 0 ? `
+          <div class="mysql-table-section">
+            <h4><i class="fas fa-exchange-alt" style="color: #6366f1;"></i> Últimos Movimientos Importados</h4>
+            <div class="table-responsive">
+              <table class="data-table mysql-verify-table">
+                <thead>
+                  <tr>
+                    <th>ID Movimiento</th>
+                    <th>ID Lote</th>
+                    <th>Tipo</th>
+                    <th>Cantidad</th>
+                    <th>Cantidad Anterior</th>
+                    <th>Cantidad Posterior</th>
+                    <th>Razón Documentada</th>
+                    <th>Fecha y Hora</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${data.movements.map(m => `
+                    <tr>
+                      <td><strong>#${m.movement_id}</strong></td>
+                      <td>${m.batch_id}</td>
+                      <td><span class="badge badge-info">${m.movement_type}</span></td>
+                      <td>${m.quantity}</td>
+                      <td>${m.previous_quantity}</td>
+                      <td>${m.posterior_quantity}</td>
+                      <td class="text-muted">${m.reason}</td>
+                      <td>${new Date(m.datetime).toLocaleString('es-CO')}</td>
+                    </tr>
+                  `).join('')}
+                </tbody>
+              </table>
+            </div>
+          </div>
+          ` : ''}
+
+          <!-- Tabla Alertas -->
+          ${data.alerts.length > 0 ? `
+          <div class="mysql-table-section">
+            <h4><i class="fas fa-bell" style="color: #ef4444;"></i> Últimas Alertas Importadas</h4>
+            <div class="table-responsive">
+              <table class="data-table mysql-verify-table">
+                <thead>
+                  <tr>
+                    <th>ID Alerta</th>
+                    <th>Tipo de Alerta</th>
+                    <th>Prioridad</th>
+                    <th>Título</th>
+                    <th>Mensaje</th>
+                    <th>Estado</th>
+                    <th>Fecha y Hora</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${data.alerts.map(a => `
+                    <tr>
+                      <td><strong>#${a.alert_id}</strong></td>
+                      <td>${a.alert_type}</td>
+                      <td>${a.priority}</td>
+                      <td>${a.title}</td>
+                      <td class="text-muted">${a.message}</td>
+                      <td>${a.is_read ? '<span class="badge badge-success">Leído</span>' : '<span class="badge badge-warning">Pendiente</span>'}</td>
+                      <td>${new Date(a.created_at).toLocaleString('es-CO')}</td>
+                    </tr>
+                  `).join('')}
+                </tbody>
+              </table>
+            </div>
+          </div>
+          ` : ''}
+
+          <!-- Tabla Sesiones -->
+          ${data.sessions.length > 0 ? `
+          <div class="mysql-table-section">
+            <h4><i class="fas fa-user-clock" style="color: #3b82f6;"></i> Últimas Sesiones Importadas</h4>
+            <div class="table-responsive">
+              <table class="data-table mysql-verify-table">
+                <thead>
+                  <tr>
+                    <th>ID Sesión</th>
+                    <th>ID Usuario</th>
+                    <th>Dirección IP</th>
+                    <th>Agente de Usuario</th>
+                    <th>Fecha y Hora Inicio</th>
+                    <th>Estado</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${data.sessions.map(s => `
+                    <tr>
+                      <td><strong>#${s.session_id}</strong></td>
+                      <td>${s.user_id}</td>
+                      <td class="text-muted">${s.ip_address || '-'}</td>
+                      <td class="text-muted" title="${s.user_agent || ''}">${(s.user_agent || '-').substring(0, 40)}${(s.user_agent || '').length > 40 ? '...' : ''}</td>
+                      <td>${new Date(s.start_time).toLocaleString('es-CO')}</td>
+                      <td>${s.is_active ? '<span class="badge badge-success">Activa</span>' : '<span class="badge badge-secondary">Finalizada</span>'}</td>
+                    </tr>
+                  `).join('')}
+                </tbody>
+              </table>
+            </div>
+          </div>
+          ` : ''}
+        </div>
+      `;
+
+      showToast('Verificación completada', 'Datos de MySQL consultados exitosamente', 'success');
+    } catch (error) {
+      console.error('Error verificando MySQL:', error);
+      container.innerHTML = `
+        <div class="mysql-error">
+          <i class="fas fa-exclamation-triangle"></i>
+          <p>No se pudo consultar la base de datos MySQL.</p>
+          <p class="text-muted">${error.message || 'Error de conexión'}</p>
+        </div>
+      `;
+      showToast('Error', 'No se pudo verificar MySQL', 'error');
+    }
+  },
+
   formatNumber(num) {
     if (!num) return '0';
     return parseFloat(num).toLocaleString('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
