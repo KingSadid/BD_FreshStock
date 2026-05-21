@@ -116,31 +116,32 @@ const mysqlVerification = asyncHandler(async (req, res) => {
 
   // Latest 5 movements
   const [movementRows] = await db.query(
-    `SELECT m.movement_id, m.batch_id, mt.name as movement_type, m.quantity, 
-            m.previous_quantity, m.posterior_quantity, m.reason, m.datetime
-     FROM movement m
-     INNER JOIN movement_type mt ON m.movement_type_id = mt.movement_type_id
-     WHERE m.reason LIKE '%Firebase%'
-     ORDER BY m.datetime DESC
+    `SELECT movement.movement_id, movement.batch_id, movement_type.name as movement_type, movement.quantity, 
+            movement.previous_quantity, movement.posterior_quantity, movement.reason, movement.datetime
+     FROM movement
+     INNER JOIN movement_type ON movement.movement_type_id = movement_type.movement_type_id
+     WHERE movement.reason LIKE '%Firebase%'
+     ORDER BY movement.datetime DESC
      LIMIT 5`
   );
 
   // Latest 5 alerts
   const [alertRows] = await db.query(
-    `SELECT a.alert_id, at.name as alert_type, at.priority, a.title, a.message, a.is_read, a.created_at
-     FROM alert a
-     INNER JOIN alert_type at ON a.alert_type_id = at.alert_type_id
-     WHERE a.title LIKE 'Lote #%'
-     ORDER BY a.created_at DESC
+    `SELECT alert.alert_id, alert_type.name as alert_type, alert_type.priority, alert.title, alert.message, alert.is_read, alert.created_at
+     FROM alert
+     INNER JOIN alert_type ON alert.alert_type_id = alert_type.alert_type_id
+     WHERE alert.title LIKE 'Lote #%'
+     ORDER BY alert.created_at DESC
      LIMIT 5`
   );
 
   // Latest 5 sessions
   const [sessionRows] = await db.query(
-    `SELECT session_id, user_id, ip_address, user_agent, start_time, is_active
+    `SELECT audit_session.session_id, audit_session.user_id, audit_session.ip_address, 
+            audit_session.user_agent, audit_session.start_time, audit_session.is_active
      FROM audit_session
-     WHERE token_hash = 'etl-import'
-     ORDER BY start_time DESC
+     WHERE audit_session.token_hash = 'etl-import'
+     ORDER BY audit_session.start_time DESC
      LIMIT 5`
   );
 

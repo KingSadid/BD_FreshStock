@@ -3,12 +3,12 @@ const AppError = require('../utils/AppError');
 
 const getAll = async () => {
   const [rows] = await db.query(`
-    SELECT u.user_id, u.name, u.email, u.role, u.is_active, u.created_at,
-           CASE WHEN a.user_id IS NOT NULL THEN TRUE ELSE FALSE END AS is_online
-    FROM user u
+    SELECT user.user_id, user.name, user.email, user.role, user.is_active, user.created_at,
+           CASE WHEN active_session.user_id IS NOT NULL THEN TRUE ELSE FALSE END AS is_online
+    FROM user
     LEFT JOIN (
-      SELECT DISTINCT user_id FROM audit_session WHERE is_active = TRUE
-    ) a ON u.user_id = a.user_id
+      SELECT DISTINCT audit_session.user_id FROM audit_session WHERE audit_session.is_active = TRUE
+    ) active_session ON user.user_id = active_session.user_id
   `);
   return rows;
 };
