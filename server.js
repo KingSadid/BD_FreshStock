@@ -1,4 +1,3 @@
-require('dotenv').config();
 const express = require("express");
 const path = require("path");
 const cors = require("cors");
@@ -16,7 +15,7 @@ const reportsRoutes = require("./routes/reports.routes");
 const analyticsRoutes = require("./routes/analytics.routes");
 const etlRoutes = require("./routes/etl.routes");
 
-const PORT = process.env.PORT || 5000;
+const PORT = 5000;
 const api = express();
 
 api.use(cors());
