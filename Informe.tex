@@ -114,7 +114,7 @@
 		autenticaci\'{o}n seguro basado en hashing criptogr\'{a}fico con
 		bcryptjs y tokens JWT, se dise\~{n}\'{o} una capa de persistencia
 		NoSQL con Firebase Firestore bajo la metodolog\'{i}a \textit{Query
-		Driven Design}, y se implement\'{o} un proceso ETL automatizado que migra datos
+		Driven Design}, y se implement\'{o} un proceso ETL manual que migra datos
 		desde Firestore hacia MySQL. El resultado es un sistema funcional
 		que integra frontend, backend, base de datos relacional,
 		autenticaci\'{o}n por roles y anal\'{i}tica NoSQL.
@@ -1359,15 +1359,15 @@
 	\textit{toast} de notificaci\'{o}n con los resultados.
 	
 	Esta integraci\'{o}n garantiza que cualquier administrador
-	pueda sincronizar los datos entre Firebase y MySQL con un
-	solo clic. Sin embargo, el equipo fue m\'{a}s all\'{a}:
-	entendiendo que un sistema que depende de que un operador
-	presione un bot\'{o}n no es realmente un sistema aut\'{o}nomo,
-	se implement\'{o} un proceso programado mediante la librer\'{i}a
-	\texttt{node-cron} que ejecuta el ETL autom\'{a}ticamente
-	cada d\'{i}a a medianoche. De esta manera, la sincronizaci\'{o}n
-	entre el ecosistema NoSQL y el relacional es constante y sin
-	fricciones, sin necesidad de intervenci\'{o}n humana.
+	pueda sincronizar los datos entre Firebase y MySQL de forma
+	estrictamente manual con un solo clic. Esta decisi\'{o}n de
+	dise\~{n}o responde a la necesidad de mantener un control total
+	y auditable sobre el flujo de migraci\'{o}n de datos NoSQL a MySQL,
+	evitando sincronizaciones autom\'{a}ticas descontroladas que
+	puedan saturar la base de datos o introducir inconsistencias sin
+	supervisi\'{o}n humana directa. De esta manera, el proceso opera
+	de forma pura y controlada bajo demanda, garantizando que un
+	administrador supervise activamente cada ciclo de carga.
 	
 	% ------- 11.4 -----------------------------------------------
 	\subsection{Resultados de la migraci\'{o}n}
@@ -1427,7 +1427,7 @@
 	dise\~{n}\'{o} una capa de persistencia NoSQL con Firebase
 	Firestore~\cite{GoogleFirebase:2025} utilizando la
 	metodolog\'{i}a Query Driven Design~\cite{Cattell:2011}, y
-	se construy\'{o} un proceso ETL automatizado~\cite{Kimball:2013} que
+	se construy\'{o} un proceso ETL manual bajo demanda~\cite{Kimball:2013} que
 	migra los datos de anal\'{i}tica desde Firestore hacia MySQL,
 	complementado con una gesti\'{o}n de secretos basada en variables
 	de entorno que garantiza la seguridad de las credenciales.
@@ -1551,17 +1551,12 @@
 		externos al c\'{o}digo fuente, almacenados en el sistema
 		operativo o en archivos \texttt{.env}, que permiten separar
 		la configuraci\'{o}n de la l\'{o}gica de negocio.
-		
-		\item \textbf{Cron job:} tarea programada que se ejecuta
-		autom\'{a}ticamente en intervalos definidos, utilizada para
-		procesos peri\'{o}dicos como sincronizaci\'{o}n de datos o
-		env\'{i}o de notificaciones.
 	\end{itemize}
 	
 	
 	%  REFERENCIAS
 	
-	\begin{thebibliography}{17}
+	\begin{thebibliography}{16}
 		
 		\bibitem{Silver:2016}
 		E.~A. Silver, D.~F. Pyke, and D.~J. Thomas,
@@ -1659,11 +1654,6 @@
 		S.~Motavalli,
 		``dotenv: Loads environment variables from .env,'' 2025.
 		[Online]. Disponible en: \url{https://www.npmjs.com/package/dotenv}
-		
-		\bibitem{nodecron:2025}
-		R.~Meriyah,
-		``node-cron: A simple cron-like job scheduler for Node.js,'' 2025.
-		[Online]. Disponible en: \url{https://www.npmjs.com/package/node-cron}
 		
 	\end{thebibliography}
 	

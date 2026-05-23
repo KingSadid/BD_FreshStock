@@ -288,6 +288,9 @@ const ReportsScreen = {
   async loadFirebase() {
     try {
       const data = await api.getFirebaseReport();
+      if (data.error || !data.timeline_7d) {
+        throw new Error(data.error || 'Datos de Firebase inválidos');
+      }
 
       // Summary cards
       const summaryEl = document.getElementById('firebase-summary');
