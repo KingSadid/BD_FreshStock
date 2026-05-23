@@ -1,0 +1,25 @@
+# Dependencias locales
+node_modules/
+package-lock.json
+
+# Archivos de credenciales y configuración sensible (IGNORAR SIEMPRE)
+env/freshstock_key.json
+.env
+.env.local
+.env.development
+.env.test
+.env.production
+
+# Archivos de editores e IDEs
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Archivos del sistema operativo
+Thumbs.db
+ehthumbs.db
+Desktop.ini
