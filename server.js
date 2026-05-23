@@ -1,8 +1,6 @@
 const express = require("express");
 const path = require("path");
 const cors = require("cors");
-const cron = require("node-cron");
-const etlService = require("./services/etl.service");
 
 const testRoutes = require("./routes/test.routes");
 const authRoutes = require("./routes/auth.routes");
@@ -42,17 +40,6 @@ api.use((err, req, res, next) => {
   const status = err.statusCode || (res.statusCode === 200 ? 500 : res.statusCode);
   const message = err.message || 'Error interno del servidor';
   res.status(status).json({ error: message });
-});
-
-// Programar el proceso ETL para ejecutarse diariamente a las 00:00
-cron.schedule('0 0 * * *', async () => {
-  console.log('[Cron] Iniciando proceso ETL automático diario...');
-  try {
-    const results = await etlService.runETL();
-    console.log('[Cron] ETL automático completado con éxito:', results);
-  } catch (err) {
-    console.error('[Cron] Error en la ejecución del ETL automático:', err.message);
-  }
 });
 
 api.listen(PORT, () => {
