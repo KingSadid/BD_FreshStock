@@ -1,13 +1,7 @@
 -- ======================================================
--- FRESHSTOCK DATABASE SCHEMA
+-- FRESHSTOCK DATABASE 
 -- Author: Sadid Acosta
 -- ======================================================
--- ADVERTENCIA: Este archivo es solo para la instalación
--- inicial. NO lo ejecutes si ya tienes datos en la base
--- de datos, ya que las restricciones de llaves primarias
--- fallarán y perderás los datos existentes.
--- ======================================================
---
 -- Para instalar por primera vez, ejecuta primero:
 --   CREATE DATABASE IF NOT EXISTS freshstock;
 -- Luego ejecuta este archivo completo.
