@@ -6,11 +6,11 @@ El sistema recolecta datos analíticos interactivos y de auditoría en la nube u
 
 ---
 
-##  Instrucciones de Configuración de Firebase para el Evaluador / Profesor
+##  Instrucciones de Configuración de Firebase 
 
 De acuerdo con las **buenas prácticas de ciberseguridad en la industria de desarrollo de software**, las credenciales de conexión y llaves privadas no se suben a repositorios públicos o privados de Git (configuración aplicada en el archivo `.gitignore` para omitir `env/freshstock_key.json`).
 
-Para evaluar y ejecutar el proceso ETL de forma exitosa, el evaluador tiene **dos alternativas simples** de configuración:
+Para evaluar y ejecutar el proceso ETL de forma exitosa,  tiene **dos alternativas simples** de configuración:
 
 ### Opción A: Configuración Local mediante Archivo JSON (Recomendada)
 Para correr la aplicación en tu entorno de desarrollo local con tu propia base de datos de Firebase:
