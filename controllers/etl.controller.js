@@ -10,6 +10,44 @@ const ALERT_TYPES = {
   batch_depleted: 4
 };
 
+const run = asyncHandler(async (req, res) => {
+  if (req.user.role !== 'admin') {
+    throw new AppError('Solo administradores pueden ejecutar el ETL', 403);
+  }
+
+  const events = await analytics.getAllEvents();
+  console.log(`[ETL] ${events.length} eventos encontrados en Firebase`);
+  const results = { alerts: 0, movements: 0, sessions: 0, skipped: 0 };
+
+  for (const event of events) {
+    try {
+      if (event.event_type === 'expiry_event') {
+        const inserted = await loadExpiryAlert(event);
+        if (inserted) results.alerts++;
+        else results.skipped++;
+      } else if (event.event_type === 'inventory_movement') {
+        const inserted = await loadMovement(event);
+        if (inserted) results.movements++;
+        else results.skipped++;
+      } else if (event.event_type === 'user_session') {
+        const inserted = await loadSession(event);
+        if (inserted) results.sessions++;
+        else results.skipped++;
+      } else {
+        results.skipped++;
+      }
+    } catch (err) {
+      results.skipped++;
+    }
+  }
+
+  res.json({
+    message: 'ETL completado',
+    events_processed: events.length,
+    results
+  });
+});
+
 const loadExpiryAlert = async (event) => {
   const event_data = event.data;
   const isExpired = event_data.was_consumed === false;
@@ -82,44 +120,5 @@ const loadSession = async (event) => {
   );
   return true;
 };
-
-const run = asyncHandler(async (req, res) => {
-  if (req.user.role !== 'admin') {
-    throw new AppError('Solo administradores pueden ejecutar el ETL', 403);
-  }
-
-  const events = await analytics.getAllEvents();
-  console.log(`[Manual ETL] ${events.length} eventos encontrados en Firebase`);
-  const results = { alerts: 0, movements: 0, sessions: 0, skipped: 0 };
-
-  for (const event of events) {
-    try {
-      if (event.event_type === 'expiry_event') {
-        const inserted = await loadExpiryAlert(event);
-        if (inserted) results.alerts++;
-        else results.skipped++;
-      } else if (event.event_type === 'inventory_movement') {
-        const inserted = await loadMovement(event);
-        if (inserted) results.movements++;
-        else results.skipped++;
-      } else if (event.event_type === 'user_session') {
-        const inserted = await loadSession(event);
-        if (inserted) results.sessions++;
-        else results.skipped++;
-      } else {
-        results.skipped++;
-      }
-    } catch (err) {
-      console.error(`[Manual ETL Error] Error processing event ${event.id}:`, err.message);
-      results.skipped++;
-    }
-  }
-
-  res.json({
-    message: 'ETL completado',
-    events_processed: events.length,
-    results
-  });
-});
 
 module.exports = { run };
