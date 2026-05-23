@@ -3,7 +3,6 @@ const path = require('path');
 
 let serviceAccount;
 
-// Primero intentar cargar desde una variable de entorno (ideal para producción y GitHub seguro)
 if (process.env.FIREBASE_SERVICE_ACCOUNT) {
   try {
     serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
@@ -12,7 +11,6 @@ if (process.env.FIREBASE_SERVICE_ACCOUNT) {
   }
 }
 
-// Fallback al archivo local si no hay variable de entorno
 if (!serviceAccount) {
   try {
     serviceAccount = require(path.join(__dirname, '..', 'env', 'freshstock_key.json'));
@@ -22,7 +20,6 @@ if (!serviceAccount) {
   }
 }
 
-// Formatear de forma robusta la llave privada si contiene caracteres escapados o carece de cabeceras
 if (serviceAccount.private_key && !serviceAccount.private_key.includes('BEGIN PRIVATE KEY')) {
   serviceAccount.private_key = `-----BEGIN PRIVATE KEY-----\n${serviceAccount.private_key.replace(/\\n/g, '\n')}\n-----END PRIVATE KEY-----\n`;
 } else if (serviceAccount.private_key) {
