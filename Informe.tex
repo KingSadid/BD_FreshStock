@@ -114,7 +114,7 @@
 		autenticaci\'{o}n seguro basado en hashing criptogr\'{a}fico con
 		bcryptjs y tokens JWT, se dise\~{n}\'{o} una capa de persistencia
 		NoSQL con Firebase Firestore bajo la metodolog\'{i}a \textit{Query
-		Driven Design}, y se implement\'{o} un proceso ETL que migra datos
+		Driven Design}, y se implement\'{o} un proceso ETL automatizado que migra datos
 		desde Firestore hacia MySQL. El resultado es un sistema funcional
 		que integra frontend, backend, base de datos relacional,
 		autenticaci\'{o}n por roles y anal\'{i}tica NoSQL.
@@ -125,7 +125,7 @@
 		m\'{e}todo \peps{}, modelo Entidad-Relaci\'{o}n, base de datos
 		relacional, hashing criptogr\'{a}fico, autenticaci\'{o}n JWT,
 		NoSQL, Firebase Firestore, ETL, Query Driven Design,
-		trazabilidad, arquitectura de software.
+		trazabilidad, arquitectura de software, variables de entorno.
 	\end{IEEEkeywords}
 	
 	
@@ -1109,6 +1109,34 @@
 	token expira o el usuario cierra sesi\'{o}n expl\'{i}citamente
 	se borran los datos locales y se regresa al login.
 	
+	% ------- 9.8 -----------------------------------------------
+	\subsection{Gestión de Secretos y Variables de Entorno}
+	
+	En una etapa de maduración del backend, el equipo reconoció
+	que la seguridad no podía ser una característica superficial,
+	sino un pilar estructural. El código fuente contenía valores
+	sensibles ---como el \texttt{JWT\_SECRET} y las credenciales
+	de la base de datos--- escritos directamente en los archivos
+	JavaScript, lo que representaba un vector de ataque crítico
+	en cualquier escenario de producción.
+	
+	Para resolverlo, se adoptó la librería \texttt{dotenv}, que
+	permite cargar variables de entorno desde un archivo
+	\texttt{.env} al inicio de la aplicación. Los valores
+	sensibles se extrajeron del código fuente y se trasladaron
+	a este archivo, que se excluyó del repositorio mediante
+	\texttt{.gitignore}. Se creó además un archivo
+	\texttt{.env.example} con las claves necesarias pero sin los
+	valores reales, sirviendo como documentación para futuros
+	desarrolladores.
+	
+	Esta decisión cumple un doble propósito: por un lado,
+	garantiza que ningún secreto sea expuesto en el repositorio
+	de código; por otro, facilita la portabilidad del sistema,
+	pues cada entorno ---desarrollo, pruebas, producción---
+	puede configurarse sin modificar una sola línea de código.
+	Es una práctica estándar en la industria que el equipo
+	adoptó como parte de su crecimiento profesional.
 
 	%  SECCION 10 — DISENO E IMPLEMENTACION NOSQL
 
@@ -1332,8 +1360,14 @@
 	
 	Esta integraci\'{o}n garantiza que cualquier administrador
 	pueda sincronizar los datos entre Firebase y MySQL con un
-	solo clic, sin necesidad de acceder al servidor ni ejecutar
-	comandos manualmente.
+	solo clic. Sin embargo, el equipo fue m\'{a}s all\'{a}:
+	entendiendo que un sistema que depende de que un operador
+	presione un bot\'{o}n no es realmente un sistema aut\'{o}nomo,
+	se implement\'{o} un proceso programado mediante la librer\'{i}a
+	\texttt{node-cron} que ejecuta el ETL autom\'{a}ticamente
+	cada d\'{i}a a medianoche. De esta manera, la sincronizaci\'{o}n
+	entre el ecosistema NoSQL y el relacional es constante y sin
+	fricciones, sin necesidad de intervenci\'{o}n humana.
 	
 	% ------- 11.4 -----------------------------------------------
 	\subsection{Resultados de la migraci\'{o}n}
@@ -1393,8 +1427,10 @@
 	dise\~{n}\'{o} una capa de persistencia NoSQL con Firebase
 	Firestore~\cite{GoogleFirebase:2025} utilizando la
 	metodolog\'{i}a Query Driven Design~\cite{Cattell:2011}, y
-	se construy\'{o} un proceso ETL~\cite{Kimball:2013} que
-	migra los datos de anal\'{i}tica desde Firestore hacia MySQL.
+	se construy\'{o} un proceso ETL automatizado~\cite{Kimball:2013} que
+	migra los datos de anal\'{i}tica desde Firestore hacia MySQL,
+	complementado con una gesti\'{o}n de secretos basada en variables
+	de entorno que garantiza la seguridad de las credenciales.
 	
 	La integraci\'{o}n de estos componentes demuestra que las
 	bases de datos NoSQL y relacionales no son excluyentes, sino
@@ -1432,10 +1468,6 @@
 		\textit{cron job} que eval\'{u}e diariamente los lotes
 		pr\'{o}ximos a vencer y genere registros en la tabla
 		\texttt{alert} sin intervenci\'{o}n manual.
-		
-		\item \textbf{ETL programado:} automatizar la ejecuci\'{o}n
-		del proceso ETL con una tarea peri\'{o}dica en lugar de
-		depender del bot\'{o}n manual.
 	\end{itemize}
 	
 	%  APENDICES
@@ -1514,6 +1546,16 @@
 		\item \textbf{Middleware:} capa de software que se ejecuta
 		entre la petici\'{o}n HTTP y la respuesta, utilizada para
 		tareas como autenticaci\'{o}n, logging o control de acceso.
+		
+		\item \textbf{Variables de entorno:} valores de configuraci\'{o}n
+		externos al c\'{o}digo fuente, almacenados en el sistema
+		operativo o en archivos \texttt{.env}, que permiten separar
+		la configuraci\'{o}n de la l\'{o}gica de negocio.
+		
+		\item \textbf{Cron job:} tarea programada que se ejecuta
+		autom\'{a}ticamente en intervalos definidos, utilizada para
+		procesos peri\'{o}dicos como sincronizaci\'{o}n de datos o
+		env\'{i}o de notificaciones.
 	\end{itemize}
 	
 	
@@ -1612,6 +1654,16 @@
 		``ETL Process Design for Big Data Analytics Platforms,''
 		in \emph{Proc. IEEE Int. Conf. on Big Data Analytics}, 2021,
 		pp.~112--118.
+		
+		\bibitem{dotenv:2025}
+		S.~Motavalli,
+		``dotenv: Loads environment variables from .env,'' 2025.
+		[Online]. Disponible en: \url{https://www.npmjs.com/package/dotenv}
+		
+		\bibitem{nodecron:2025}
+		R.~Meriyah,
+		``node-cron: A simple cron-like job scheduler for Node.js,'' 2025.
+		[Online]. Disponible en: \url{https://www.npmjs.com/package/node-cron}
 		
 	\end{thebibliography}
 	
