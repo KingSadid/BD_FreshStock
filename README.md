@@ -1,4 +1,4 @@
-# 🍏 FreshStock - Sistema de Gestión de Inventarios con PEPS y Pipeline ETL
+#  FreshStock - Sistema de Gestión de Inventarios con PEPS y Pipeline ETL
 
 FreshStock es una aplicación web inteligente diseñada para la gestión optimizada de inventarios, optimizando el control de stock y de caducidades a través del método **PEPS (Primero en Entrar, Primero en Salir / FIFO)** y un motor analítico en tiempo real. 
 
@@ -6,7 +6,7 @@ El sistema recolecta datos analíticos interactivos y de auditoría en la nube u
 
 ---
 
-## 🛠️ Instrucciones de Configuración de Firebase para el Evaluador / Profesor
+##  Instrucciones de Configuración de Firebase para el Evaluador / Profesor
 
 De acuerdo con las **buenas prácticas de ciberseguridad en la industria de desarrollo de software**, las credenciales de conexión y llaves privadas no se suben a repositorios públicos o privados de Git (configuración aplicada en el archivo `.gitignore` para omitir `env/freshstock_key.json`).
 
@@ -33,7 +33,7 @@ Ideal si deseas desplegar la aplicación en la nube (Render, Heroku, Vercel, etc
 
 ---
 
-## 🚀 Guía de Instalación y Ejecución Local
+##  Guía de Instalación y Ejecución Local
 
 Sigue estos sencillos pasos para levantar el entorno completo del proyecto en tu máquina:
 
@@ -79,7 +79,7 @@ Una vez dentro como **Administrador**, verás el botón **"Ejecutar ETL"** en la
 
 ---
 
-## 🏗️ Arquitectura y Tecnologías
+##  Arquitectura y Tecnologías
 * **Backend**: Node.js, Express.
 * **Base de Datos Relacional**: MySQL (para control de inventarios inmutables, compras, ventas y auditoría).
 * **Base de Datos NoSQL**: Firebase Firestore (para almacenamiento rápido de eventos analíticos del frontend y auditoría de accesos).
