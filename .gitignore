@@ -1,8 +1,8 @@
-# Dependencias locales
+# Local offices
 node_modules/
 package-lock.json
 
-# Archivos de credenciales y configuración sensible (IGNORAR SIEMPRE)
+# Credential files and sensitive configuration
 env/freshstock_key.json
 .env
 .env.local
@@ -10,7 +10,7 @@ env/freshstock_key.json
 .env.test
 .env.production
 
-# Archivos de editores e IDEs
+# Editor and IDE files
 .vscode/
 .idea/
 *.suo
@@ -19,7 +19,7 @@ env/freshstock_key.json
 *.sln
 *.sw?
 
-# Archivos del sistema operativo
+# Operating system files
 Thumbs.db
 ehthumbs.db
 Desktop.ini
