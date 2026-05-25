@@ -72,8 +72,8 @@ El servidor backend iniciará y mostrará los siguientes enlaces:
 
 ### 5. Acceso para Evaluación
 Abre tu navegador e ingresa a `http://localhost:5000`. Puedes ingresar utilizando las siguientes credenciales de administrador pre-sembradas en MySQL:
-* **Correo electrónico**: `sadid@freshstock.com` (o `admin@freshstock.com`)
-* **Contraseña**: `123456` (o la contraseña configurada al registrarte en la pantalla de registro).
+* **Correo electrónico**: `Sadid@freshstock.com` 
+* **Contraseña**: `Admin123` 
 
 Una vez dentro como **Administrador**, verás el botón **"Ejecutar ETL"** en la esquina superior derecha de la pantalla principal. Al hacer clic, se activará el pipeline de integración real extrayendo los eventos analíticos desde Firebase y migrándolos de forma robusta e inteligente a tus tablas locales de MySQL.
 
