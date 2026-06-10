@@ -121,7 +121,7 @@ body::before {
   position: fixed;
   inset: 0;
   z-index: -1;
-  background-image: url('../assets/Background.png');
+  background-image: url('/assets/Background.png');
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
@@ -4117,54 +4117,54 @@ body::before {
 .mysql-error .text-muted {
   color: var(--text-muted);
   font-size: 0.85rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    background-attachment: initial !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+@media (prefers-contrast: more) {
+  :root {
+    --hairline: currentColor;
+    --glass-1: var(--bg-card);
+    --glass-2: var(--bg-card);
+    --glass-3: var(--bg-card);
+    --glass-4: var(--bg-card);
+    --blur-xs: 0px;
+    --blur-sm: 0px;
+    --blur-md: 0px;
+    --blur-lg: 0px;
+    --blur-xl: 0px;
+  }
+}
+
+@media print {
+  .sidebar,
+  .top-bar {
+    display: none !important;
   }
 
-  @media (prefers-reduced-motion: reduce) {
-    *,
-    *::before,
-    *::after {
-      animation-duration: 0.01ms !important;
-      animation-iteration-count: 1 !important;
-      transition-duration: 0.01ms !important;
-      background-attachment: initial !important;
-      scroll-behavior: auto !important;
-    }
+  .main-content {
+    overflow: visible !important;
   }
 
-  @media (prefers-contrast: more) {
-    :root {
-      --hairline: currentColor;
-      --glass-1: var(--bg-card);
-      --glass-2: var(--bg-card);
-      --glass-3: var(--bg-card);
-      --glass-4: var(--bg-card);
-      --blur-xs: 0px;
-      --blur-sm: 0px;
-      --blur-md: 0px;
-      --blur-lg: 0px;
-      --blur-xl: 0px;
-    }
+  .glass-card,
+  .kpi-card,
+  .chart-card,
+  .product-card {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    background: #fff !important;
+    box-shadow: none !important;
+    border: 1px solid #ccc !important;
+    break-inside: avoid;
   }
-
-  @media print {
-    .sidebar,
-    .top-bar {
-      display: none !important;
-    }
-
-    .main-content {
-      overflow: visible !important;
-    }
-
-    .glass-card,
-    .kpi-card,
-    .chart-card,
-    .product-card {
-      backdrop-filter: none !important;
-      -webkit-backdrop-filter: none !important;
-      background: #fff !important;
-      box-shadow: none !important;
-      border: 1px solid #ccc !important;
-      break-inside: avoid;
-    }
-  }
+}
