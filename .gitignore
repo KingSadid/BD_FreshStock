@@ -1,25 +1,55 @@
-# Local offices
 node_modules/
 package-lock.json
 
-# Credential files and sensitive configuration
 env/freshstock_key.json
-.env
-.env.local
-.env.development
-.env.test
-.env.production
+env/serviceAccountKey.json
+env/*-key.json
+*.pem
+*.key
+*.crt
+*.csr
+*.p12
+*.pfx
 
-# Editor and IDE files
+.env
+.env.*
+!.env.example
+
 .vscode/
 .idea/
+.history/
+.temp/
+.tmp/
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
-*.sw?
+*.swp
+*.swo
+*~
 
-# Operating system files
 Thumbs.db
 ehthumbs.db
 Desktop.ini
+.DS_Store
+
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+coverage/
+.nyc_output/
+test-results/
+
+dist/
+build/
+.next/
+out/
+
+.cache/
+*.tsbuildinfo
+
+*.tgz
+*.tar.gz

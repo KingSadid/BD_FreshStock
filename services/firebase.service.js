@@ -13,9 +13,9 @@ if (process.env.FIREBASE_SERVICE_ACCOUNT) {
 
 if (!serviceAccount) {
   try {
-    serviceAccount = require(path.join(__dirname, '..', 'env', 'freshstock_key.json'));
+    serviceAccount = require(path.join(__dirname, '..', 'env', 'serviceAccountKey.json'));
   } catch (err) {
-    console.error('[Firebase Error] No se encontró el archivo de credenciales local env/freshstock_key.json:', err.message);
+    console.error('[Firebase Error] No se encontró el archivo de credenciales local env/serviceAccountKey.json:', err.message);
     throw new Error('Falta la configuración de Firebase (Key JSON o Variable de Entorno).');
   }
 }
