@@ -1,6 +1,4 @@
-/**
- * Products screen logic.
- */
+
 const ProductsScreen = {
   async load() {
     try {

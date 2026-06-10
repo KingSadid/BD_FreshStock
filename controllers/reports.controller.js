@@ -25,7 +25,7 @@ const movementTypes = asyncHandler(async (req, res) => {
 const firebaseReport = asyncHandler(async (req, res) => {
   const allEvents = await analyticsService.getAllEvents();
 
-  // Aggregate by event type
+  
   const byType = {};
   const timeline = {};
   const today = new Date();
@@ -53,7 +53,7 @@ const firebaseReport = asyncHandler(async (req, res) => {
     byType[type].count++;
     byType[type].events.push(event);
 
-    // Timeline aggregation
+    
     const dateStr = event.timestamp && event.timestamp.toDate
       ? event.timestamp.toDate().toISOString().split('T')[0]
       : (event.timestamp ? new Date(event.timestamp).toISOString().split('T')[0] : null);
@@ -67,7 +67,7 @@ const firebaseReport = asyncHandler(async (req, res) => {
     }
   });
 
-  // Build summary
+  
   const summary = {
     total_events: allEvents.length,
     event_types: Object.keys(byType).length,
@@ -93,28 +93,28 @@ const firebaseReport = asyncHandler(async (req, res) => {
 const mysqlVerification = asyncHandler(async (req, res) => {
   const db = require('../services/mysql.service');
 
-  // Count movements imported from Firebase
+  
   const [movementCountRows] = await db.query(
     `SELECT COUNT(*) as total, MAX(datetime) as last_date 
      FROM movement 
      WHERE reason LIKE '%Firebase%' OR reason LIKE '%ETL%'`
   );
 
-  // Count alerts imported from Firebase
+  
   const [alertCountRows] = await db.query(
     `SELECT COUNT(*) as total, MAX(created_at) as last_date 
      FROM alert 
      WHERE title LIKE 'Lote #%'`
   );
 
-  // Count sessions imported from Firebase
+  
   const [sessionCountRows] = await db.query(
     `SELECT COUNT(*) as total, MAX(start_time) as last_date 
      FROM audit_session 
      WHERE token_hash = 'etl-import'`
   );
 
-  // Latest 5 movements
+  
   const [movementRows] = await db.query(
     `SELECT movement.movement_id, movement.batch_id, movement_type.name as movement_type, movement.quantity, 
             movement.previous_quantity, movement.posterior_quantity, movement.reason, movement.datetime
@@ -125,7 +125,7 @@ const mysqlVerification = asyncHandler(async (req, res) => {
      LIMIT 5`
   );
 
-  // Latest 5 alerts
+  
   const [alertRows] = await db.query(
     `SELECT alert.alert_id, alert_type.name as alert_type, alert_type.priority, alert.title, alert.message, alert.is_read, alert.created_at
      FROM alert
@@ -135,7 +135,7 @@ const mysqlVerification = asyncHandler(async (req, res) => {
      LIMIT 5`
   );
 
-  // Latest 5 sessions
+  
   const [sessionRows] = await db.query(
     `SELECT audit_session.session_id, audit_session.user_id, audit_session.ip_address, 
             audit_session.user_agent, audit_session.start_time, audit_session.is_active

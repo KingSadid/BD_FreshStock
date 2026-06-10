@@ -1,6 +1,4 @@
-/**
- * Alerts screen logic.
- */
+
 const AlertsScreen = {
   async load() {
     try {
@@ -12,7 +10,7 @@ const AlertsScreen = {
         const d = getDaysRemaining(b.expiry_date);
         return d > 0 && d <= 7;
       }).length;
-      document.getElementById('alert-stock').textContent = '3'; // Simulado
+      document.getElementById('alert-stock').textContent = '3'; 
 
       const container = document.getElementById('alerts-container');
       container.innerHTML = expiring.map(batch => {

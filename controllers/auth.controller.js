@@ -63,7 +63,7 @@ const login = asyncHandler(async (req, res) => {
 
   const token = generateToken(user);
 
-  // Crear sesión en audit_session
+  
   const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
   await authDao.createSession(user.user_id, tokenHash, req.ip, req.get('user-agent'));
 

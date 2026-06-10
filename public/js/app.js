@@ -1,7 +1,4 @@
-/**
- * Application entry point.
- * Initializes forms and global behavior.
- */
+
 document.addEventListener('DOMContentLoaded', () => {
   navigateTo('screen-login');
 

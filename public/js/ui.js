@@ -1,7 +1,4 @@
-/**
- * Common UI interactions.
- * No external animation libraries. Pure CSS transitions.
- */
+
 const AppUI = {
   showToast(title, message, type = 'success') {
     const container = document.getElementById('toast-container');
@@ -35,7 +32,7 @@ const AppUI = {
 
     container.appendChild(toast);
 
-    // Trigger reflow for animation
+    
     void toast.offsetWidth;
     toast.classList.add('show');
     const progress = toast.querySelector('.toast-progress');
@@ -78,14 +75,12 @@ const AppUI = {
   }
 };
 
-// Global aliases
 const showToast = AppUI.showToast.bind(AppUI);
 const toggleTheme = AppUI.toggleTheme.bind(AppUI);
 const toggleSidebar = AppUI.toggleSidebar.bind(AppUI);
 const openNewProductPanel = AppUI.openNewProductPanel.bind(AppUI);
 const closeNewProductPanel = AppUI.closeNewProductPanel.bind(AppUI);
 
-// Event delegation for common interactions
 document.addEventListener('DOMContentLoaded', () => {
   document.addEventListener('click', (e) => {
     const nav = e.target.closest('[data-navigate]');

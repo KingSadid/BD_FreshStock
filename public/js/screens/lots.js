@@ -1,6 +1,4 @@
-/**
- * Lots (batches) screen logic.
- */
+
 const LotsScreen = {
   async load() {
     try {

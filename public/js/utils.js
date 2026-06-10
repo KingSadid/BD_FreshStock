@@ -1,7 +1,4 @@
-/**
- * Shared utility functions.
- * DRY: Centralize common operations.
- */
+
 const AppUtils = {
   formatDate(dateStr) {
     if (!dateStr) return '-';
@@ -40,7 +37,6 @@ const AppUtils = {
   }
 };
 
-// Expose individual helpers globally for inline handlers and backward compatibility
 const formatDate = AppUtils.formatDate;
 const getDaysRemaining = AppUtils.getDaysRemaining;
 const getStatusBadge = AppUtils.getStatusBadge;

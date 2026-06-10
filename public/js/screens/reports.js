@@ -289,7 +289,7 @@ const ReportsScreen = {
     try {
       const data = await api.getFirebaseReport();
 
-      // Summary cards
+      
       const summaryEl = document.getElementById('firebase-summary');
       if (summaryEl) {
         summaryEl.innerHTML = `
@@ -324,7 +324,7 @@ const ReportsScreen = {
         `;
       }
 
-      // Types visual bars
+      
       const typesEl = document.getElementById('firebase-types-chart');
       if (typesEl) {
         if (data.by_type.length === 0) {
@@ -381,7 +381,7 @@ const ReportsScreen = {
         }
       }
 
-      // Donut chart
+      
       const donutTotal = document.getElementById('firebase-total-events');
       if (donutTotal) donutTotal.textContent = data.total_events;
 
@@ -393,7 +393,7 @@ const ReportsScreen = {
         const circumference = 2 * Math.PI * radius;
         let offset = 0;
 
-        // Remove old segments except base circle and texts
+        
         donutSvg.querySelectorAll('.donut-seg-firebase').forEach(s => s.remove());
 
         const legendItems = [];
@@ -424,14 +424,14 @@ const ReportsScreen = {
           `);
         });
 
-        // Re-append texts on top
+        
         const texts = donutSvg.querySelectorAll('text');
         texts.forEach(t => donutSvg.appendChild(t));
 
         legendEl.innerHTML = legendItems.join('');
       }
 
-      // Timeline chart
+      
       const timelineEl = document.getElementById('firebase-timeline-chart');
       if (timelineEl) {
         if (data.timeline_7d.length === 0 || data.timeline_7d.every(([,c]) => c === 0)) {
@@ -461,7 +461,7 @@ const ReportsScreen = {
         }
       }
 
-      // Recent events
+      
       const recentEl = document.getElementById('firebase-recent-events');
       if (recentEl) {
         if (data.recent_events.length === 0) {

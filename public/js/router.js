@@ -15,16 +15,16 @@ const AppRouter = {
 
     if (!next) { AppState.isNavigating = false; return; }
 
-    // Update sidebar active states across all sidebars
+    
     document.querySelectorAll('.sidebar-menu li').forEach(li => {
       const nav = li.getAttribute('data-navigate');
       li.classList.toggle('active', nav === screenId);
     });
 
-    // Show loading overlay
+    
     if (loading) {
       loading.style.display = 'flex';
-      // Force reflow
+      
       void loading.offsetWidth;
       loading.classList.add('active');
     }
@@ -36,11 +36,11 @@ const AppRouter = {
 
       next.classList.add('active');
 
-      // Scroll content to top
+      
       const content = next.querySelector('.content-area');
       if (content) content.scrollTop = 0;
 
-      // Hide loading overlay with CSS transition
+      
       if (loading) {
         loading.classList.remove('active');
         setTimeout(() => {
@@ -53,7 +53,7 @@ const AppRouter = {
       AppState.currentScreen = screenId;
       AppState.isNavigating = false;
 
-      // Load screen data
+      
       if (screenId === 'screen-dashboard') loadDashboard();
       if (screenId === 'screen-products') loadProducts();
       if (screenId === 'screen-lots') loadLots();
@@ -66,5 +66,4 @@ const AppRouter = {
   }
 };
 
-// Global alias for inline handlers and existing calls
 const navigateTo = AppRouter.navigateTo.bind(AppRouter);

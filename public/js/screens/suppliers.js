@@ -1,6 +1,4 @@
-/**
- * Suppliers screen logic.
- */
+
 const SuppliersScreen = {
   async load() {
     try {

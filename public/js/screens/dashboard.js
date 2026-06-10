@@ -1,6 +1,4 @@
-/**
- * Dashboard screen logic.
- */
+
 const DashboardScreen = {
   async load() {
     try {
